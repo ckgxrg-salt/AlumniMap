@@ -1,4 +1,5 @@
 use alumnimap::app::App;
+use alumnimap::models::people;
 use alumnimap::models::universities;
 #[allow(unused_imports)]
 use loco_rs::{cli::playground, prelude::*};
@@ -16,8 +17,15 @@ async fn main() -> loco_rs::Result<()> {
     };
     wcu.insert(&ctx.db).await.unwrap();
 
-    let res = universities::Entity::find().all(&ctx.db).await.unwrap();
-    println!("{:?}", res);
-
+    let goaty_goat = people::ActiveModel {
+        id_num: Set(221_901),
+        cn_name: Set("山羊".to_string()),
+        en_name: Set(Some("Goaty Goat".to_string())),
+        class_of: Set(2022),
+        major: Set(Some("Goatmatics".to_string())),
+        profile: Set(Some("Who asks you".to_string())),
+        ..Default::default()
+    };
+    goaty_goat.insert(&ctx.db).await.unwrap();
     Ok(())
 }
