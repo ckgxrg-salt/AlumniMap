@@ -12,7 +12,7 @@
       };
     in
     {
-      devShells.${system}.default = pkgs.mkShell {
+      devShells.${system}.default = pkgs.mkShell rec {
         name = "alumnimap";
 
         buildInputs = with pkgs; [
@@ -23,9 +23,24 @@
           deadnix
           nixfmt-rfc-style
 
+          # Backend
           loco
           sea-orm-cli
+
+          # Frontend
+          trunk
+          openssl
+          pkg-config
+          libxkbcommon
+          libGL
+          fontconfig
+          wayland
+          xorg.libXcursor
+          xorg.libXrandr
+          xorg.libXi
+          xorg.libX11
         ];
+        LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath buildInputs}";
       };
     };
 }
