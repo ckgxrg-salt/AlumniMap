@@ -1,4 +1,3 @@
-#![warn(clippy::all, rust_2018_idioms)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 // When compiling natively:
@@ -49,7 +48,7 @@ fn main() {
             .start(
                 canvas,
                 web_options,
-                Box::new(|cc| Ok(Box::new(eframe_template::TemplateApp::new(cc)))),
+                Box::new(|cc| Ok(Box::new(alumnimap_frontend::TemplateApp::new(cc)))),
             )
             .await;
 

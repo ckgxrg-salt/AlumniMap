@@ -19,3 +19,5 @@ target/
 *.sqlite
 .direnv/
 .envrc
+
+dist/
