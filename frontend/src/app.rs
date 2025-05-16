@@ -1,13 +1,13 @@
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)]
-pub struct TemplateApp {
+pub struct AlumnimapApp {
     label: String,
 
     #[serde(skip)]
     value: f32,
 }
 
-impl Default for TemplateApp {
+impl Default for AlumnimapApp {
     fn default() -> Self {
         Self {
             label: "Hello World!".to_owned(),
@@ -16,7 +16,7 @@ impl Default for TemplateApp {
     }
 }
 
-impl TemplateApp {
+impl AlumnimapApp {
     /// Called once before the first frame.
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         // This is also where you can customize the look and feel of egui using
@@ -32,7 +32,7 @@ impl TemplateApp {
     }
 }
 
-impl eframe::App for TemplateApp {
+impl eframe::App for AlumnimapApp {
     /// Called by the frame work to save state before shutdown.
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
         eframe::set_value(storage, eframe::APP_KEY, self);

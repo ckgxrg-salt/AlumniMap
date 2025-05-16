@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["webapp"]
+members = ["frontend"]
 
 [package]
 name = "alumnimap"
