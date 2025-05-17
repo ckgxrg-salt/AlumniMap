@@ -1,4 +1,5 @@
 use egui::TextEdit;
+use egui::{FontData, FontDefinitions, FontFamily};
 
 #[derive(Default)]
 pub struct AlumnimapApp {
@@ -10,7 +11,26 @@ impl AlumnimapApp {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
         egui_extras::install_image_loaders(&cc.egui_ctx);
+        Self::set_font(&cc.egui_ctx);
         Default::default()
+    }
+
+    fn set_font(ctx: &egui::Context) {
+        let mut fonts = FontDefinitions::default();
+        fonts.font_data.insert(
+            "my_font".to_owned(),
+            std::sync::Arc::new(FontData::from_static(include_bytes!(
+                "../assets/NotoSansSC.ttf"
+            ))),
+        );
+
+        fonts
+            .families
+            .get_mut(&FontFamily::Proportional)
+            .unwrap()
+            .insert(0, "my_font".to_owned());
+
+        ctx.set_fonts(fonts);
     }
 }
 
@@ -45,11 +65,24 @@ impl eframe::App for AlumnimapApp {
 
             ui.separator();
 
-            ui.image(egui::include_image!("../assets/map.jpg"));
+            ui.image(egui::include_image!("../assets/world.svg"));
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
                 credits(ui);
                 egui::warn_if_debug_build(ui);
+            });
+        });
+
+        egui::Window::new("Wild Chicken University").show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                ui.label("Pic Here");
+                ui.separator();
+                ui.vertical(|ui| {
+                    ui.label("Goaty Goat");
+                    ui.label("山羊");
+                    ui.separator();
+                    ui.label("谁问你了");
+                });
             });
         });
     }
@@ -58,7 +91,7 @@ impl eframe::App for AlumnimapApp {
 fn credits(ui: &mut egui::Ui) {
     ui.horizontal(|ui| {
         ui.spacing_mut().item_spacing.x = 0.0;
-        ui.hyperlink_to("Alumnimap", "https://github.com/ckgxrg-salt/Alumnimap");
+        ui.hyperlink_to("AlumniMap", "https://github.com/ckgxrg-salt/Alumnimap");
         ui.label(" by ");
         ui.hyperlink_to("ckgxrg", "https://ckgxrg.io");
         ui.label(". Free software under ");
