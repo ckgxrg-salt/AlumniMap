@@ -1,4 +1,4 @@
-//! Describes how to draw points and lines on a map
+//! Draw points and lines on a world map
 
 use egui::{Color32, Pos2, Rect};
 
@@ -9,6 +9,7 @@ pub struct DestnationPoint {
     /// Positive value for northern latitude, negative for southern
     latitude: f32,
     name: String,
+    colour: Color32,
 }
 
 /// The world map on the main interface
@@ -40,8 +41,8 @@ impl WorldMap {
             painter.circle(
                 draw_pos,
                 15.0,
-                Color32::RED, //TODO: Find a way to load colour
-                egui::Stroke::new(1.0, Color32::RED),
+                each.colour,
+                egui::Stroke::new(1.0, each.colour),
             );
         }
     }
