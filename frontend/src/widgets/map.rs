@@ -3,7 +3,7 @@
 use egui::{Color32, Pos2, Rect};
 
 /// A points on the map that represents a destination
-pub struct DestnationPoint {
+pub struct DestinationPoint {
     /// Positive value for eastern longitude, negative for western
     longitude: f32,
     /// Positive value for northern latitude, negative for southern
@@ -12,16 +12,49 @@ pub struct DestnationPoint {
     colour: Color32,
 }
 
+impl DestinationPoint {
+    /// Creates a new destination point
+    pub fn new(longitude: f32, latitude: f32, name: String, colour: Color32) -> Self {
+        Self {
+            longitude,
+            latitude,
+            name,
+            colour,
+        }
+    }
+}
+
 /// The world map on the main interface
 pub struct WorldMap {
-    dests: Vec<DestnationPoint>,
+    dests: Vec<DestinationPoint>,
     image_url: String,
 }
 
+/// Data manipulation
+impl WorldMap {
+    /// Creates a new world map
+    pub fn new(image_url: String) -> Self {
+        Self {
+            dests: Vec::new(),
+            image_url,
+        }
+    }
+
+    /// Adds a destination point to the map
+    pub fn add_destination(mut self, point: DestinationPoint) -> Self {
+        self.dests.push(point);
+        self
+    }
+}
+
+/// Render relates
 impl WorldMap {
     /// Calls egui to draw everything to the screen
     pub fn render(&self, ui: &mut egui::Ui) {
-        let image_res = ui.image(self.image_url.clone());
+        // TODO: Images must be served via static assets from the backend
+        let image = egui::Image::new(egui::include_image!("../../assets/world.svg"))
+            .sense(egui::Sense::CLICK | egui::Sense::HOVER);
+        let image_res = ui.add(image);
         let area = image_res.rect;
         self.draw_points(ui, area);
         if let Some(click_pos) = image_res.interact_pointer_pos() {
@@ -52,11 +85,11 @@ impl WorldMap {
         for each in &self.dests {
             let norm_coord = Pos2::new(
                 (click_pos.x - area.left()) / area.width(),
-                (click_pos.y - area.right()) / area.height(),
+                (click_pos.y - area.top()) / area.height(),
             );
             let distance = norm_coord.distance(to_norm_coords(each.longitude, each.latitude));
             if distance < 15.0 / area.height() {
-                log::info!("Click on {}", each.name);
+                todo!("Click on {}", each.name);
             }
         }
     }
@@ -66,11 +99,11 @@ impl WorldMap {
         for each in &self.dests {
             let norm_coord = Pos2::new(
                 (hover_pos.x - area.left()) / area.width(),
-                (hover_pos.y - area.right()) / area.height(),
+                (hover_pos.y - area.top()) / area.height(),
             );
             let distance = norm_coord.distance(to_norm_coords(each.longitude, each.latitude));
             if distance < 15.0 / area.height() {
-                log::info!("Hover on {}", each.name);
+                todo!("Hover on {}", each.name);
             }
         }
     }

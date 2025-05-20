@@ -1,2 +1,2 @@
-mod map;
-mod profile;
+pub mod map;
+pub mod profile;
