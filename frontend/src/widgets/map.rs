@@ -29,6 +29,7 @@ pub struct WorldMap {
     // All dest [Point]s will draw a line from the base [Point]
     base: Point,
     dests: Vec<Point>,
+    internal_area: Rect,
     image_url: String,
 }
 
@@ -39,6 +40,7 @@ impl WorldMap {
         Self {
             base,
             dests: Vec::new(),
+            internal_area: Rect::ZERO,
             image_url,
         }
     }
@@ -50,23 +52,28 @@ impl WorldMap {
     }
 }
 
-/// Render relates
+/// Render related
 impl WorldMap {
     /// Calls egui to draw everything to the screen
-    pub fn render(&self, ui: &mut egui::Ui) {
-        // TODO: Images must be served via static assets from the backend
-        let image = egui::Image::new(egui::include_image!("../../assets/world.svg"))
-            .sense(egui::Sense::CLICK | egui::Sense::HOVER);
-        let image_res = ui.add(image);
-        let area = image_res.rect;
-        self.draw_base_and_lines(ui, area);
-        self.draw_points(ui, area);
-        if let Some(click_pos) = image_res.interact_pointer_pos() {
-            self.check_click(click_pos, area);
-        }
-        if let Some(hover_pos) = image_res.hover_pos() {
-            self.check_hover(ui, hover_pos, area);
-        }
+    pub fn render(&mut self, ui: &mut egui::Ui) {
+        let mut real_internal_area = self.internal_area;
+        let scene = egui::Scene::new().zoom_range(1.0..=10.0);
+        scene.show(ui, &mut real_internal_area, |ui| {
+            // TODO: Images must be served via static assets from the backend due to WASM limitations
+            let image = egui::Image::new(egui::include_image!("../../assets/world.svg"))
+                .sense(egui::Sense::CLICK | egui::Sense::HOVER);
+            let image_res = ui.add(image);
+            let area = image_res.rect;
+            self.draw_base_and_lines(ui, area);
+            self.draw_points(ui, area);
+            if let Some(click_pos) = image_res.interact_pointer_pos() {
+                self.check_click(click_pos, area);
+            }
+            if let Some(hover_pos) = image_res.hover_pos() {
+                self.check_hover(ui, hover_pos, area);
+            }
+        });
+        self.internal_area = real_internal_area;
     }
 
     /// Draws the base point and all lines from the base to the dests
@@ -76,16 +83,16 @@ impl WorldMap {
             to_norm_coords(self.base.longitude, self.base.latitude),
             area,
         );
+        for each in &self.dests {
+            let dest_pos = to_ui_coords(to_norm_coords(each.longitude, each.latitude), area);
+            painter.line_segment([base_pos, dest_pos], egui::Stroke::new(1.0, each.colour));
+        }
         painter.circle(
             base_pos,
             15.0,
             self.base.colour,
             egui::Stroke::new(1.0, self.base.colour),
         );
-        for each in &self.dests {
-            let dest_pos = to_ui_coords(to_norm_coords(each.longitude, each.latitude), area);
-            painter.line_segment([base_pos, dest_pos], egui::Stroke::new(1.0, each.colour));
-        }
     }
 
     /// Recursively draws all destination points
@@ -95,7 +102,7 @@ impl WorldMap {
             let draw_pos = to_ui_coords(to_norm_coords(each.longitude, each.latitude), area);
             painter.circle(
                 draw_pos,
-                15.0,
+                5.0 / area.height() * self.internal_area.height(),
                 each.colour,
                 egui::Stroke::new(1.0, each.colour),
             );
@@ -110,7 +117,7 @@ impl WorldMap {
                 (click_pos.y - area.top()) / area.height(),
             );
             let distance = norm_coord.distance(to_norm_coords(each.longitude, each.latitude));
-            if distance < 15.0 / area.height() {
+            if distance < 5.0 / area.height() / area.height() * self.internal_area.height() {
                 todo!("Click on {}", each.name);
             }
         }
@@ -124,7 +131,7 @@ impl WorldMap {
                 (hover_pos.y - area.top()) / area.height(),
             );
             let distance = norm_coord.distance(to_norm_coords(each.longitude, each.latitude));
-            if distance < 15.0 / area.height() {
+            if distance < 5.0 / area.height() / area.height() * self.internal_area.height() {
                 egui::show_tooltip_at_pointer(
                     ui.ctx(),
                     ui.layer_id(),
