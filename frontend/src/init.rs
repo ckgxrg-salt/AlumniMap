@@ -29,14 +29,14 @@ pub fn create_world_map() -> WorldMap {
         Point::new(0.0, 0.0, "Nope".to_string(), Color32::YELLOW),
     )
     .add_destination(Point::new(
-        90.0,
-        90.0,
+        24.0,
+        40.0,
         "Wile Chicken University".to_string(),
         Color32::RED,
     ))
     .add_destination(Point::new(
-        -90.0,
-        -90.0,
+        -20.0,
+        -29.0,
         "Wild Chicken University".to_string(),
         Color32::BLUE,
     ))

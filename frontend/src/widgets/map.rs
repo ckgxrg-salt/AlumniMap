@@ -65,7 +65,7 @@ impl WorldMap {
             self.check_click(click_pos, area);
         }
         if let Some(hover_pos) = image_res.hover_pos() {
-            self.check_hover(hover_pos, area);
+            self.check_hover(ui, hover_pos, area);
         }
     }
 
@@ -117,7 +117,7 @@ impl WorldMap {
     }
 
     /// Handles the logic when the cursor hovers over a destination point
-    fn check_hover(&self, hover_pos: Pos2, area: Rect) {
+    fn check_hover(&self, ui: &egui::Ui, hover_pos: Pos2, area: Rect) {
         for each in &self.dests {
             let norm_coord = Pos2::new(
                 (hover_pos.x - area.left()) / area.width(),
@@ -125,7 +125,14 @@ impl WorldMap {
             );
             let distance = norm_coord.distance(to_norm_coords(each.longitude, each.latitude));
             if distance < 15.0 / area.height() {
-                todo!("Hover on {}", each.name);
+                egui::show_tooltip_at_pointer(
+                    ui.ctx(),
+                    ui.layer_id(),
+                    egui::Id::new("dest_points_tooltip"),
+                    |ui| {
+                        ui.label(each.name.clone());
+                    },
+                );
             }
         }
     }
