@@ -3,7 +3,7 @@
 use egui::{Color32, Pos2, Rect};
 
 /// A points on the map that represents a destination
-pub struct DestinationPoint {
+pub struct Point {
     /// Positive value for eastern longitude, negative for western
     longitude: f32,
     /// Positive value for northern latitude, negative for southern
@@ -12,7 +12,7 @@ pub struct DestinationPoint {
     colour: Color32,
 }
 
-impl DestinationPoint {
+impl Point {
     /// Creates a new destination point
     pub fn new(longitude: f32, latitude: f32, name: String, colour: Color32) -> Self {
         Self {
@@ -26,22 +26,25 @@ impl DestinationPoint {
 
 /// The world map on the main interface
 pub struct WorldMap {
-    dests: Vec<DestinationPoint>,
+    // All dest [Point]s will draw a line from the base [Point]
+    base: Point,
+    dests: Vec<Point>,
     image_url: String,
 }
 
 /// Data manipulation
 impl WorldMap {
     /// Creates a new world map
-    pub fn new(image_url: String) -> Self {
+    pub fn new(image_url: String, base: Point) -> Self {
         Self {
+            base,
             dests: Vec::new(),
             image_url,
         }
     }
 
     /// Adds a destination point to the map
-    pub fn add_destination(mut self, point: DestinationPoint) -> Self {
+    pub fn add_destination(mut self, point: Point) -> Self {
         self.dests.push(point);
         self
     }
@@ -56,6 +59,7 @@ impl WorldMap {
             .sense(egui::Sense::CLICK | egui::Sense::HOVER);
         let image_res = ui.add(image);
         let area = image_res.rect;
+        self.draw_base_and_lines(ui, area);
         self.draw_points(ui, area);
         if let Some(click_pos) = image_res.interact_pointer_pos() {
             self.check_click(click_pos, area);
@@ -65,12 +69,30 @@ impl WorldMap {
         }
     }
 
+    /// Draws the base point and all lines from the base to the dests
+    fn draw_base_and_lines(&self, ui: &egui::Ui, area: Rect) {
+        let painter = ui.painter();
+        let base_pos = to_ui_coords(
+            to_norm_coords(self.base.longitude, self.base.latitude),
+            area,
+        );
+        painter.circle(
+            base_pos,
+            15.0,
+            self.base.colour,
+            egui::Stroke::new(1.0, self.base.colour),
+        );
+        for each in &self.dests {
+            let dest_pos = to_ui_coords(to_norm_coords(each.longitude, each.latitude), area);
+            painter.line_segment([base_pos, dest_pos], egui::Stroke::new(1.0, each.colour));
+        }
+    }
+
     /// Recursively draws all destination points
     fn draw_points(&self, ui: &egui::Ui, area: Rect) {
         let painter = ui.painter();
         for each in &self.dests {
-            let centre = to_norm_coords(each.longitude, each.latitude);
-            let draw_pos = to_ui_coords(centre, area);
+            let draw_pos = to_ui_coords(to_norm_coords(each.longitude, each.latitude), area);
             painter.circle(
                 draw_pos,
                 15.0,
