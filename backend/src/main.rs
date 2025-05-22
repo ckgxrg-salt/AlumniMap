@@ -1,7 +1,6 @@
 use clap::{Parser, Subcommand};
 use sea_orm::ActiveValue::Set;
-use sea_orm::ColumnTrait;
-use sea_orm::{Database, EntityTrait, QueryFilter};
+use sea_orm::{ColumnTrait, Database, EntityTrait, QueryFilter};
 use std::io::Write;
 use std::{error::Error, io, str::FromStr};
 
@@ -42,8 +41,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
 /// Actually starts the server
 async fn run_server(uri: String) -> Result<(), Box<dyn Error>> {
-    println!("Running server");
     let db = Database::connect(uri).await?;
+    let pending = Migrator::get_pending_migrations(&db).await?;
+    if !pending.is_empty() {
+        println!("Running migration");
+        Migrator::up(&db, None).await?;
+        println!("Success");
+    }
+    println!("Running server");
     server::run(db).await?;
     Ok(())
 }
