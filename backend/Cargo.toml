@@ -1,0 +1,12 @@
+[package]
+name = "backend"
+version = "0.1.0"
+authors = ["ckgxrg <ckgxrg@gmail.com>"]
+edition = "2021"
+publish = false
+
+[lints.clippy]
+pedantic = "warn"
+
+[dependencies]
+actix-web = "4"
