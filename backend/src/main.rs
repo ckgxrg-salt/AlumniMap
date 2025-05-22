@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 use sea_orm::ActiveValue::Set;
-use sea_orm::{Database, EntityTrait};
+use sea_orm::ColumnTrait;
+use sea_orm::{Database, EntityTrait, QueryFilter};
 use std::io::Write;
 use std::{error::Error, io, str::FromStr};
 
@@ -68,7 +69,12 @@ async fn list(uri: String, kind: String) -> Result<(), Box<dyn Error>> {
     } else if kind.eq("profile") {
         let list = profile::Entity::find().all(&db).await?;
         for each in list {
-            println!("{}: {}", each.id, each.name_primary);
+            let university = university::Entity::find_by_id(each.university_id)
+                .one(&db)
+                .await?
+                .unwrap()
+                .title;
+            println!("{}: {}: {university}", each.id, each.name_primary);
         }
         Ok(())
     } else {
@@ -99,20 +105,25 @@ async fn interactive_add(uri: String, kind: String) -> Result<(), Box<dyn Error>
         Ok(())
     } else if kind.eq("profile") {
         println!("Creating new Profile");
-        let number = ask_value("Student Number");
         let name_primary = ask_value("Primary Name");
         let name_supplementary = ask_value_nullable("Supplementary Name");
         let class_of = ask_value("Class of");
+        let university = university::Entity::find()
+            .filter(university::Column::Title.contains(ask_value::<String>("University")))
+            .one(&db)
+            .await?
+            .expect("No such University")
+            .id;
         let major = ask_value_nullable("Major");
         let bio = ask_value_nullable("Bio");
         let email = ask_value_nullable("Email");
         let qq = ask_value_nullable("QQ");
         let wechat = ask_value_nullable("Wechat");
         let model = profile::ActiveModel {
-            number: Set(number),
             name_primary: Set(name_primary),
             name_supplementary: Set(name_supplementary),
             class_of: Set(class_of),
+            university_id: Set(university),
             major: Set(major),
             bio: Set(bio),
             email: Set(email),
@@ -147,7 +158,8 @@ fn ask_value<T: FromStr>(name: &str) -> T {
 }
 fn ask_value_nullable<T: FromStr>(name: &str) -> Option<T> {
     let mut value = String::new();
-    println!("{name}: ");
+    print!("{name}: ");
+    io::stdout().flush().unwrap_or_default();
     io::stdin()
         .read_line(&mut value)
         .expect("Failed to read input");

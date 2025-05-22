@@ -7,10 +7,10 @@ pub struct Migration;
 enum Profile {
     Table,
     Id,
-    Number,
     NamePrimary,
     NameSupplementary,
     ClassOf,
+    UniversityId,
     Major,
     Bio,
     Email,
@@ -28,11 +28,11 @@ impl MigrationTrait for Migration {
                     .table(Profile::Table)
                     .if_not_exists()
                     .col(pk_auto(Profile::Id))
-                    .col(integer(Profile::Number))
                     .col(string(Profile::NamePrimary))
                     .col(string_null(Profile::NameSupplementary))
                     .col(integer(Profile::ClassOf))
                     .col(string_null(Profile::Major))
+                    .col(integer(Profile::UniversityId))
                     .col(string_null(Profile::Bio))
                     .col(string_null(Profile::Email))
                     .col(string_null(Profile::QQ))
