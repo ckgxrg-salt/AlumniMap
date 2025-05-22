@@ -1,1 +1,3 @@
-mod database;
+pub mod app;
+pub mod handlers;
+pub mod routes;
