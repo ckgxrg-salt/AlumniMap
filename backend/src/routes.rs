@@ -6,6 +6,7 @@ pub fn setup(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/api")
             .service(handlers::ping)
-            .service(handlers::universities),
+            .service(handlers::universities)
+            .service(handlers::profiles),
     );
 }
