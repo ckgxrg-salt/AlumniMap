@@ -1,5 +1,6 @@
 use actix_web::{middleware, web, App, HttpServer};
-use sea_orm::{Database, DatabaseConnection};
+use sea_orm::DatabaseConnection;
+use std::{error::Error, fmt::Display};
 
 use crate::routes;
 
@@ -9,6 +10,7 @@ pub struct AppState {
 }
 
 /// Errors that may happen in the App
+#[derive(Debug)]
 pub enum AppError {
     /// App cannot connect to the database
     DbErr,
@@ -17,17 +19,20 @@ pub enum AppError {
     /// App encountered an error during runtime
     RuntimeErr,
 }
+impl Error for AppError {}
+impl Display for AppError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Error")
+    }
+}
 
 /// Runs the backend app
 ///
 /// # Errors
 /// If the app fails to connect to the given database or cannot bind to the specified port, it will not run and exit immediately.
 /// If the app encounters a runtime error, it will halt and return a [`AppError::RuntimeErr`].
-pub async fn run(db_url: String) -> Result<(), AppError> {
-    let conn = Database::connect(db_url)
-        .await
-        .map_err(|_| AppError::DbErr)?;
-    let state = AppState { db: conn };
+pub async fn run(db: DatabaseConnection) -> Result<(), AppError> {
+    let state = AppState { db };
     let mut server = HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(state.clone()))
