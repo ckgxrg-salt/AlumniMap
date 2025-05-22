@@ -652,9 +652,12 @@ name = "backend"
 version = "0.1.0"
 dependencies = [
  "actix-web",
+ "clap",
  "entity",
  "migration",
  "sea-orm",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -1591,6 +1594,7 @@ name = "entity"
 version = "0.1.0"
 dependencies = [
  "sea-orm",
+ "serde",
 ]
 
 [[package]]
