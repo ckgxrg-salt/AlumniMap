@@ -117,6 +117,7 @@ async fn interactive_add(uri: String, kind: String) -> Result<(), Box<dyn Error>
         let name_primary = ask_value("Primary Name");
         let name_supplementary = ask_value_nullable("Supplementary Name");
         let class_of = ask_value("Class of");
+        let avatar = ask_value("Avatar");
         let university = university::Entity::find()
             .filter(university::Column::Title.contains(ask_value::<String>("University")))
             .one(&db)
@@ -132,6 +133,7 @@ async fn interactive_add(uri: String, kind: String) -> Result<(), Box<dyn Error>
             name_primary: Set(name_primary),
             name_supplementary: Set(name_supplementary),
             class_of: Set(class_of),
+            avatar: Set(avatar),
             university_id: Set(university),
             major: Set(major),
             bio: Set(bio),

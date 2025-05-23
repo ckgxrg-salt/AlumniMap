@@ -5,40 +5,9 @@ use std::sync::{Arc, Mutex};
 
 use entity::profile;
 
-/// Refer to the backend code for this struct
-struct Profile {
-    name_primary: String,
-    name_supplementary: Option<String>,
-    class_of: i32,
-    avatar: String,
-    bio: Option<String>,
-    major: Option<String>,
-    qq: Option<String>,
-    wechat: Option<String>,
-    email: Option<String>,
-    matrix: Option<String>,
-}
-
-impl From<profile::Model> for Profile {
-    fn from(value: profile::Model) -> Self {
-        Self {
-            name_primary: value.name_primary,
-            name_supplementary: value.name_supplementary,
-            class_of: value.class_of,
-            avatar: value.avatar,
-            bio: value.bio,
-            major: value.major,
-            qq: value.qq,
-            wechat: value.wechat,
-            email: value.email,
-            matrix: value.matrix,
-        }
-    }
-}
-
 /// A list contains many profile cards
 pub struct List {
-    profiles: Vec<Profile>,
+    profiles: Vec<profile::Model>,
     pub title: String,
     pub uni_id: i32,
     starting_pos: Pos2,
@@ -75,7 +44,7 @@ impl List {
             let temp_state = self.fetch_state.clone();
             *temp_state.lock().unwrap() = State::Loading;
             let req = ehttp::Request::get(format!(
-                "http://127.0.0.1:8080/api/profiles/{0}",
+                "http://127.0.0.1:8080/api/profiles/{}",
                 self.uni_id
             ));
             ehttp::fetch(req, move |response| {
@@ -94,8 +63,7 @@ impl List {
             if let Ok(val) = res {
                 let str: String = val.json().unwrap_or_default();
                 if let Ok(parsed) = serde_json::from_str::<Vec<profile::Model>>(&str) {
-                    let profiles = parsed.into_iter().map(Profile::from);
-                    self.profiles.extend(profiles);
+                    self.profiles.extend(parsed);
                 }
                 ctx.request_repaint();
                 *self.fetch_state.lock().unwrap() = State::Done;
@@ -119,24 +87,17 @@ impl List {
             .open(should_display);
         window.show(ctx, |ui| {
             for each in &self.profiles {
-                each.render(ui);
+                ui.horizontal(|ui| {
+                    ui.label("Pic Here");
+                    ui.separator();
+                    ui.vertical(|ui| {
+                        ui.label(each.name_primary.clone());
+                        ui.label(each.name_supplementary.clone().unwrap_or_default());
+                        ui.separator();
+                        ui.label(each.bio.clone().unwrap_or_default());
+                    });
+                });
             }
-        });
-    }
-}
-
-impl Profile {
-    /// Draw a single profile card
-    fn render(&self, ui: &mut egui::Ui) {
-        ui.horizontal(|ui| {
-            ui.label("Pic Here");
-            ui.separator();
-            ui.vertical(|ui| {
-                ui.label(self.name_primary.clone());
-                ui.label(self.name_supplementary.clone().unwrap_or_default());
-                ui.separator();
-                ui.label(self.bio.clone().unwrap_or_default());
-            });
         });
     }
 }

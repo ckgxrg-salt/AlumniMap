@@ -40,12 +40,6 @@ impl WorldMap {
         }
     }
 
-    /// Adds a destination point to the map
-    pub fn add_destination(mut self, point: university::Model) -> Self {
-        self.dests.push(point);
-        self
-    }
-
     /// Fetches data from the database
     fn fetch_data(&mut self, ui: &mut egui::Ui) {
         let should_fetch = {
