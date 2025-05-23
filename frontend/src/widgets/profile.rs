@@ -39,8 +39,8 @@ impl From<profile::Model> for Profile {
 /// A list contains many profile cards
 pub struct List {
     profiles: Vec<Profile>,
-    title: String,
-    uni_id: i32,
+    pub title: String,
+    pub uni_id: i32,
     starting_pos: Pos2,
     fetch_state: Arc<Mutex<State>>,
 }
@@ -66,7 +66,7 @@ impl List {
     }
 
     /// Fetches data from the database
-    fn fetch_data(&mut self, ui: &mut egui::Ui) {
+    fn fetch_data(&mut self, ctx: &egui::Context) {
         let should_fetch = {
             let fetch_state: &State = &self.fetch_state.lock().unwrap();
             matches!(fetch_state, State::Init)
@@ -82,13 +82,6 @@ impl List {
                 *temp_state.lock().unwrap() = State::Fetched(response);
             });
         }
-        let should_loading = {
-            let fetch_state: &State = &self.fetch_state.lock().unwrap();
-            matches!(fetch_state, State::Loading)
-        };
-        if should_loading {
-            ui.label("Loading...");
-        }
         let response = {
             let fetch_state: &State = &self.fetch_state.lock().unwrap();
             if let State::Fetched(response) = fetch_state {
@@ -101,10 +94,10 @@ impl List {
             if let Ok(val) = res {
                 let str: String = val.json().unwrap_or_default();
                 if let Ok(parsed) = serde_json::from_str::<Vec<profile::Model>>(&str) {
-                    let points = parsed.into_iter().map(Profile::from);
-                    self.profiles.extend(points);
+                    let profiles = parsed.into_iter().map(Profile::from);
+                    self.profiles.extend(profiles);
                 }
-                ui.ctx().request_repaint();
+                ctx.request_repaint();
                 *self.fetch_state.lock().unwrap() = State::Done;
             } else {
                 // Continue to try
@@ -117,15 +110,14 @@ impl List {
 /// Graphics
 impl List {
     /// Calls egui to draw everything to the screen
-    pub fn render(&mut self, ui: &mut egui::Ui) {
-        self.fetch_data(ui);
+    pub fn render(&mut self, ctx: &egui::Context, should_display: &mut bool) {
+        self.fetch_data(ctx);
 
-        let mut should_display = true;
         let window = egui::Window::new(self.title.clone())
             .default_pos(self.starting_pos)
             .collapsible(false)
-            .open(&mut should_display);
-        window.show(ui.ctx(), |ui| {
+            .open(should_display);
+        window.show(ctx, |ui| {
             for each in &self.profiles {
                 each.render(ui);
             }

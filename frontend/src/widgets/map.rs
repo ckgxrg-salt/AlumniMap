@@ -16,7 +16,7 @@ pub struct WorldMap {
     fetch_state: Arc<Mutex<State>>,
 
     /// All currently visible [`List`]s
-    popups: Vec<List>,
+    popups: Vec<(List, bool)>,
 }
 /// The state of fetching data from the backend
 enum State {
@@ -117,8 +117,16 @@ impl WorldMap {
         self.internal_area = real_internal_area;
 
         // Popups
-        for each in &mut self.popups {
-            each.render(ui);
+        let mut closing = Vec::new();
+        for (index, each) in self.popups.iter_mut().enumerate() {
+            let (list, should_display) = each;
+            list.render(ui.ctx(), should_display);
+            if !*should_display {
+                closing.push(index);
+            }
+        }
+        for each in closing {
+            self.popups.remove(each);
         }
     }
 
@@ -169,13 +177,15 @@ impl WorldMap {
                 (click_pos.y - area.top()) / area.height(),
             );
             let distance = norm_coord.distance(to_norm_coords(each.longitude, each.latitude));
-            if distance < 5.0 / area.height() / area.height() * self.internal_area.height() {
+            if distance < 5.0 / area.height() / area.height() * self.internal_area.height()
+                && !self.popups.iter().any(|list| list.0.uni_id == each.id)
+            {
                 let popup = List::new(
                     each.title.clone(),
                     each.id,
                     to_ui_coords(to_norm_coords(each.longitude, each.latitude), area),
                 );
-                self.popups.push(popup);
+                self.popups.push((popup, true));
             }
         }
     }
