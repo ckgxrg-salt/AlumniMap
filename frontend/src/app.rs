@@ -1,11 +1,12 @@
 use crate::init;
 use crate::widgets::map::WorldMap;
 
-pub struct AlumnimapApp {
+pub struct AlumniMapApp {
     world_map: WorldMap,
 }
 
-impl AlumnimapApp {
+impl AlumniMapApp {
+    #[must_use]
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         egui_extras::install_image_loaders(&cc.egui_ctx);
         init::init_font(&cc.egui_ctx);
@@ -15,7 +16,7 @@ impl AlumnimapApp {
     }
 }
 
-impl eframe::App for AlumnimapApp {
+impl eframe::App for AlumniMapApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             // The top panel is often a good place for a menu bar:

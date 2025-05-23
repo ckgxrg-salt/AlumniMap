@@ -18,7 +18,7 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "Alumnimap App Development",
         native_options,
-        Box::new(|cc| Ok(Box::new(frontend::AlumnimapApp::new(cc)))),
+        Box::new(|cc| Ok(Box::new(frontend::AlumniMapApp::new(cc)))),
     )
 }
 
@@ -48,7 +48,7 @@ fn main() {
             .start(
                 canvas,
                 web_options,
-                Box::new(|cc| Ok(Box::new(frontend::AlumnimapApp::new(cc)))),
+                Box::new(|cc| Ok(Box::new(frontend::AlumniMapApp::new(cc)))),
             )
             .await;
 

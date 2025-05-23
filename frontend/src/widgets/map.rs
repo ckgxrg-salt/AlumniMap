@@ -1,8 +1,12 @@
 //! Draw points and lines on a world map
 
 use egui::{Color32, Pos2, Rect};
+use std::sync::{Arc, Mutex};
+
+use entity::university;
 
 /// A points on the map that represents a destination
+/// This is simpler than [`entity::university::Model`]
 pub struct Point {
     /// Positive value for eastern longitude, negative for western
     longitude: f32,
@@ -24,6 +28,17 @@ impl Point {
     }
 }
 
+impl From<university::Model> for Point {
+    fn from(value: university::Model) -> Self {
+        Self {
+            name: value.title,
+            colour: Color32::from_hex(&value.colour).unwrap_or(Color32::DARK_RED),
+            longitude: value.longitude,
+            latitude: value.latitude,
+        }
+    }
+}
+
 /// The world map on the main interface
 pub struct WorldMap {
     // All dest [Point]s will draw a line from the base [Point]
@@ -31,6 +46,14 @@ pub struct WorldMap {
     dests: Vec<Point>,
     internal_area: Rect,
     image_url: String,
+    fetch_state: Arc<Mutex<State>>,
+}
+/// The state of fetching data from the backend
+enum State {
+    Init,
+    Loading,
+    Fetched(ehttp::Result<ehttp::Response>),
+    Done,
 }
 
 /// Data manipulation
@@ -42,6 +65,7 @@ impl WorldMap {
             dests: Vec::new(),
             internal_area: Rect::ZERO,
             image_url,
+            fetch_state: Arc::new(Mutex::new(State::Init)),
         }
     }
 
@@ -54,13 +78,54 @@ impl WorldMap {
 
 /// Render related
 impl WorldMap {
+    /// Fetches data from the database
+    fn fetch_data(&mut self, ui: &mut egui::Ui) {
+        let should_fetch = {
+            let fetch_state: &State = &self.fetch_state.lock().unwrap();
+            matches!(fetch_state, State::Init)
+        };
+        if should_fetch {
+            let temp_state = self.fetch_state.clone();
+            *temp_state.lock().unwrap() = State::Loading;
+            let req = ehttp::Request::get("http://127.0.0.1:8080/api/universities");
+            ehttp::fetch(req, move |response| {
+                *temp_state.lock().unwrap() = State::Fetched(response);
+            });
+        }
+        let should_loading = {
+            let fetch_state: &State = &self.fetch_state.lock().unwrap();
+            matches!(fetch_state, State::Loading)
+        };
+        if should_loading {
+            ui.label("Loading...");
+        }
+        let response = {
+            let fetch_state: &State = &self.fetch_state.lock().unwrap();
+            if let State::Fetched(response) = fetch_state {
+                Some(response.clone())
+            } else {
+                None
+            }
+        };
+        if let Some(Ok(res)) = response {
+            let str: String = res.json().unwrap_or_default();
+            if let Ok(parsed) = serde_json::from_str::<Vec<university::Model>>(&str) {
+                let points = parsed.into_iter().map(Point::from);
+                self.dests.extend(points);
+            }
+            ui.ctx().request_repaint();
+            *self.fetch_state.lock().unwrap() = State::Done;
+        }
+    }
+
     /// Calls egui to draw everything to the screen
     pub fn render(&mut self, ui: &mut egui::Ui) {
+        self.fetch_data(ui);
+
         let mut real_internal_area = self.internal_area;
         let scene = egui::Scene::new().zoom_range(1.0..=10.0);
         scene.show(ui, &mut real_internal_area, |ui| {
-            // TODO: Images must be served via static assets from the backend due to WASM limitations
-            let image = egui::Image::new(egui::include_image!("../../assets/world.svg"))
+            let image = egui::Image::new("http://127.0.0.1:8080/static/world.svg")
                 .sense(egui::Sense::CLICK | egui::Sense::HOVER);
             let image_res = ui.add(image);
             let area = image_res.rect;
