@@ -27,7 +27,6 @@
           deadnix
           nixfmt-rfc-style
 
-          loco
           sea-orm-cli
 
           trunk

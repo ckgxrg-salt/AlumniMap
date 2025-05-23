@@ -1,9 +1,8 @@
 //! Initialise the app
 
-use egui::Color32;
 use egui::{FontData, FontDefinitions, FontFamily};
 
-use crate::widgets::map::{Point, WorldMap};
+use crate::widgets::map::WorldMap;
 
 pub fn init_font(ctx: &egui::Context) {
     let mut fonts = FontDefinitions::default();
@@ -26,18 +25,13 @@ pub fn init_font(ctx: &egui::Context) {
 pub fn create_world_map() -> WorldMap {
     WorldMap::new(
         "TODO: Use static assets".to_string(),
-        Point::new(0.0, 0.0, "Nope".to_string(), Color32::YELLOW),
+        entity::university::Model {
+            id: 0,
+            title: "Nope".to_string(),
+            icon: "Nope".to_string(),
+            colour: "#ff1144".to_string(),
+            longitude: 23.5,
+            latitude: 0.0,
+        },
     )
-    .add_destination(Point::new(
-        24.0,
-        40.0,
-        "A Red Point".to_string(),
-        Color32::RED,
-    ))
-    .add_destination(Point::new(
-        -20.0,
-        -29.0,
-        "A Blue Point".to_string(),
-        Color32::BLUE,
-    ))
 }
