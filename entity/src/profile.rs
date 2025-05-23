@@ -10,6 +10,7 @@ pub struct Model {
     pub id: i32,
     pub name_primary: String,
     pub name_supplementary: Option<String>,
+    pub avatar: String,
     pub class_of: i32,
     pub university_id: i32,
     pub major: Option<String>,

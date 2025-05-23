@@ -9,6 +9,7 @@ enum Profile {
     Id,
     NamePrimary,
     NameSupplementary,
+    Avatar,
     ClassOf,
     UniversityId,
     Major,
@@ -30,6 +31,7 @@ impl MigrationTrait for Migration {
                     .col(pk_auto(Profile::Id))
                     .col(string(Profile::NamePrimary))
                     .col(string_null(Profile::NameSupplementary))
+                    .col(string(Profile::Avatar))
                     .col(integer(Profile::ClassOf))
                     .col(string_null(Profile::Major))
                     .col(integer(Profile::UniversityId))

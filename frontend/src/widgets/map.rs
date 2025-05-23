@@ -3,50 +3,20 @@
 use egui::{Color32, Pos2, Rect};
 use std::sync::{Arc, Mutex};
 
+use crate::widgets::profile::List;
 use entity::university;
-
-/// A points on the map that represents a destination
-/// This is simpler than [`entity::university::Model`]
-pub struct Point {
-    /// Positive value for eastern longitude, negative for western
-    longitude: f32,
-    /// Positive value for northern latitude, negative for southern
-    latitude: f32,
-    name: String,
-    colour: Color32,
-}
-
-impl Point {
-    /// Creates a new destination point
-    pub fn new(longitude: f32, latitude: f32, name: String, colour: Color32) -> Self {
-        Self {
-            longitude,
-            latitude,
-            name,
-            colour,
-        }
-    }
-}
-
-impl From<university::Model> for Point {
-    fn from(value: university::Model) -> Self {
-        Self {
-            name: value.title,
-            colour: Color32::from_hex(&value.colour).unwrap_or(Color32::DARK_RED),
-            longitude: value.longitude,
-            latitude: value.latitude,
-        }
-    }
-}
 
 /// The world map on the main interface
 pub struct WorldMap {
-    // All dest [Point]s will draw a line from the base [Point]
-    base: Point,
-    dests: Vec<Point>,
+    /// All dest [`Point`]s will draw a line from the base [`Point`]
+    base: university::Model,
+    dests: Vec<university::Model>,
     internal_area: Rect,
     image_url: String,
     fetch_state: Arc<Mutex<State>>,
+
+    /// All currently visible [`List`]s
+    popups: Vec<List>,
 }
 /// The state of fetching data from the backend
 enum State {
@@ -59,18 +29,19 @@ enum State {
 /// Data manipulation
 impl WorldMap {
     /// Creates a new world map
-    pub fn new(image_url: String, base: Point) -> Self {
+    pub fn new(image_url: String, base: university::Model) -> Self {
         Self {
             base,
             dests: Vec::new(),
             internal_area: Rect::ZERO,
             image_url,
             fetch_state: Arc::new(Mutex::new(State::Init)),
+            popups: Vec::new(),
         }
     }
 
     /// Adds a destination point to the map
-    pub fn add_destination(mut self, point: Point) -> Self {
+    pub fn add_destination(mut self, point: university::Model) -> Self {
         self.dests.push(point);
         self
     }
@@ -104,14 +75,18 @@ impl WorldMap {
                 None
             }
         };
-        if let Some(Ok(res)) = response {
-            let str: String = res.json().unwrap_or_default();
-            if let Ok(parsed) = serde_json::from_str::<Vec<university::Model>>(&str) {
-                let points = parsed.into_iter().map(Point::from);
-                self.dests.extend(points);
+        if let Some(res) = response {
+            if let Ok(val) = res {
+                let str: String = val.json().unwrap_or_default();
+                if let Ok(parsed) = serde_json::from_str::<Vec<university::Model>>(&str) {
+                    self.dests.extend(parsed);
+                }
+                ui.ctx().request_repaint();
+                *self.fetch_state.lock().unwrap() = State::Done;
+            } else {
+                // Continue to try
+                *self.fetch_state.lock().unwrap() = State::Init;
             }
-            ui.ctx().request_repaint();
-            *self.fetch_state.lock().unwrap() = State::Done;
         }
     }
 }
@@ -122,6 +97,7 @@ impl WorldMap {
     pub fn render(&mut self, ui: &mut egui::Ui) {
         self.fetch_data(ui);
 
+        // Map itself
         let mut real_internal_area = self.internal_area;
         let scene = egui::Scene::new().zoom_range(1.0..=10.0);
         scene.show(ui, &mut real_internal_area, |ui| {
@@ -139,6 +115,11 @@ impl WorldMap {
             }
         });
         self.internal_area = real_internal_area;
+
+        // Popups
+        for each in &mut self.popups {
+            each.render(ui);
+        }
     }
 
     /// Draws the base point and all lines from the base to the dests
@@ -150,13 +131,19 @@ impl WorldMap {
         );
         for each in &self.dests {
             let dest_pos = to_ui_coords(to_norm_coords(each.longitude, each.latitude), area);
-            painter.line_segment([base_pos, dest_pos], egui::Stroke::new(1.0, each.colour));
+            painter.line_segment(
+                [base_pos, dest_pos],
+                egui::Stroke::new(1.0, Color32::from_hex(&each.colour).unwrap_or_default()),
+            );
         }
         painter.circle(
             base_pos,
             7.0,
-            self.base.colour,
-            egui::Stroke::new(1.0, self.base.colour),
+            Color32::from_hex(&self.base.colour).unwrap_or_default(),
+            egui::Stroke::new(
+                1.0,
+                Color32::from_hex(&self.base.colour).unwrap_or_default(),
+            ),
         );
     }
 
@@ -168,14 +155,14 @@ impl WorldMap {
             painter.circle(
                 draw_pos,
                 5.0 / area.height() * self.internal_area.height(),
-                each.colour,
-                egui::Stroke::new(1.0, each.colour),
+                Color32::from_hex(&each.colour).unwrap_or_default(),
+                egui::Stroke::new(1.0, Color32::from_hex(&each.colour).unwrap_or_default()),
             );
         }
     }
 
     /// Handles the logic when a destination point is clicked
-    fn check_click(&self, click_pos: Pos2, area: Rect) {
+    fn check_click(&mut self, click_pos: Pos2, area: Rect) {
         for each in &self.dests {
             let norm_coord = Pos2::new(
                 (click_pos.x - area.left()) / area.width(),
@@ -183,7 +170,12 @@ impl WorldMap {
             );
             let distance = norm_coord.distance(to_norm_coords(each.longitude, each.latitude));
             if distance < 5.0 / area.height() / area.height() * self.internal_area.height() {
-                todo!("Click on {}", each.name);
+                let popup = List::new(
+                    each.title.clone(),
+                    each.id,
+                    to_ui_coords(to_norm_coords(each.longitude, each.latitude), area),
+                );
+                self.popups.push(popup);
             }
         }
     }
@@ -202,7 +194,7 @@ impl WorldMap {
                     ui.layer_id(),
                     egui::Id::new("dest_points_tooltip"),
                     |ui| {
-                        ui.label(each.name.clone());
+                        ui.label(each.title.clone());
                     },
                 );
             }
