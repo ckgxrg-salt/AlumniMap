@@ -19,9 +19,13 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Runs the server
     Server,
+    /// Run database migration
     Migrate,
+    /// List data from database
     List { kind: String },
+    /// Interactively add entries in the terminal
     Add { kind: String },
 }
 

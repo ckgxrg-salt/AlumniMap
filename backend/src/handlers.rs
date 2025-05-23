@@ -1,12 +1,20 @@
+use actix_files::NamedFile;
 use actix_web::{get, web, HttpResponse};
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use std::path::PathBuf;
 
 use crate::server::AppState;
 use entity::{profile, university};
 
+#[get("/world.svg")]
+pub async fn map() -> actix_web::Result<NamedFile> {
+    let path: PathBuf = PathBuf::from("frontend/assets/world.svg");
+    Ok(NamedFile::open(path)?)
+}
+
 #[get("/ping")]
 pub async fn ping() -> HttpResponse {
-    HttpResponse::Ok().json("Up and running")
+    HttpResponse::Ok().body("Up and running")
 }
 
 #[get("/universities")]

@@ -8,5 +8,7 @@ pub fn setup(cfg: &mut web::ServiceConfig) {
             .service(handlers::ping)
             .service(handlers::universities)
             .service(handlers::profiles),
-    );
+    )
+    .service(web::scope("/static").service(handlers::map))
+    .service(actix_files::Files::new("/", "frontend/dist").index_file("index.html"));
 }
