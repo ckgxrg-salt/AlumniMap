@@ -74,10 +74,7 @@ impl WorldMap {
         self.dests.push(point);
         self
     }
-}
 
-/// Render related
-impl WorldMap {
     /// Fetches data from the database
     fn fetch_data(&mut self, ui: &mut egui::Ui) {
         let should_fetch = {
@@ -117,7 +114,10 @@ impl WorldMap {
             *self.fetch_state.lock().unwrap() = State::Done;
         }
     }
+}
 
+/// Render related
+impl WorldMap {
     /// Calls egui to draw everything to the screen
     pub fn render(&mut self, ui: &mut egui::Ui) {
         self.fetch_data(ui);
@@ -154,7 +154,7 @@ impl WorldMap {
         }
         painter.circle(
             base_pos,
-            15.0,
+            7.0,
             self.base.colour,
             egui::Stroke::new(1.0, self.base.colour),
         );
