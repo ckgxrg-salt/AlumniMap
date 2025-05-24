@@ -9,7 +9,10 @@ use entity::{profile, university};
 #[get("/static/{filename:.*}")]
 pub async fn png(req: HttpRequest, state: web::Data<AppState>) -> actix_web::Result<NamedFile> {
     let mut path: PathBuf = req.match_info().query("filename").parse().unwrap();
-    if path.extension().is_none_or(|ext| ext != "png") {
+    if path
+        .extension()
+        .is_none_or(|ext| ext != "png" && ext != "svg")
+    {
         return Err(actix_web::error::ErrorNotFound(
             "This site serves only images",
         ));
@@ -28,6 +31,20 @@ pub async fn universities(state: web::Data<AppState>) -> HttpResponse {
     let list = university::Entity::find().all(&state.db).await;
     match list {
         Ok(result) => HttpResponse::Ok().json(serde_json::to_string(&result).unwrap_or_default()),
+        Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
+    }
+}
+
+#[get("/universities/{uni_id}")]
+pub async fn get_uni_name(state: web::Data<AppState>, path: web::Path<i32>) -> HttpResponse {
+    let list = university::Entity::find_by_id(path.into_inner())
+        .one(&state.db)
+        .await;
+    match list {
+        Ok(Some(result)) => HttpResponse::Ok()
+            .content_type("text/plain; charset=utf-8")
+            .body(result.title),
+        Ok(None) => HttpResponse::NotFound().body("No such university"),
         Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
     }
 }
