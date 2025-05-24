@@ -3,7 +3,7 @@
 use egui::{Color32, Pos2, Rect};
 use std::sync::{Arc, Mutex};
 
-use crate::widgets::profile::List;
+use crate::widgets::list::List;
 use entity::university;
 
 /// The world map on the main interface

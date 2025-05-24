@@ -1,13 +1,17 @@
-//! Each individual's profile card
+//! Pops up a list when any point is clicked
 
+use egui::Pos2;
 use std::sync::{Arc, Mutex};
 
+use crate::widgets::profile::ProfileCard;
 use entity::profile;
 
 /// A list contains many profile cards
-pub struct ProfileCard {
-    inner: profile::Model,
-    university_name: String,
+pub struct List {
+    profiles: Vec<ProfileCard>,
+    pub title: String,
+    pub uni_id: i32,
+    starting_pos: Pos2,
     fetch_state: Arc<Mutex<State>>,
 }
 /// The state of fetching data from the backend
@@ -18,18 +22,19 @@ enum State {
     Done,
 }
 
-impl From<profile::Model> for ProfileCard {
-    fn from(value: profile::Model) -> Self {
+/// Data manipulation
+impl List {
+    /// Creates a new list
+    pub fn new(title: String, uni_id: i32, starting_pos: Pos2) -> Self {
         Self {
-            inner: value,
-            university_name: "Loading...".to_string(),
+            profiles: Vec::new(),
+            title,
+            uni_id,
+            starting_pos,
             fetch_state: Arc::new(Mutex::new(State::Init)),
         }
     }
-}
 
-/// Data manipulation
-impl ProfileCard {
     /// Fetches data from the database
     fn fetch_data(&mut self, ctx: &egui::Context) {
         let should_fetch = {
@@ -40,8 +45,8 @@ impl ProfileCard {
             let temp_state = self.fetch_state.clone();
             *temp_state.lock().unwrap() = State::Loading;
             let req = ehttp::Request::get(format!(
-                "http://127.0.0.1:8080/api/universities/{}",
-                self.inner.university_id
+                "http://127.0.0.1:8080/api/profiles/{}",
+                self.uni_id
             ));
             ehttp::fetch(req, move |response| {
                 *temp_state.lock().unwrap() = State::Fetched(response);
@@ -57,11 +62,10 @@ impl ProfileCard {
         };
         if let Some(res) = response {
             if let Ok(val) = res {
-                let str = val.text();
-                if let Some(text) = str {
-                    self.university_name = text.to_string();
-                } else {
-                    self.university_name = "Unknown University".to_string();
+                let str: String = val.json().unwrap_or_default();
+                if let Ok(parsed) = serde_json::from_str::<Vec<profile::Model>>(&str) {
+                    let profiles = parsed.into_iter().map(ProfileCard::from);
+                    self.profiles.extend(profiles);
                 }
                 ctx.request_repaint();
                 *self.fetch_state.lock().unwrap() = State::Done;
@@ -74,26 +78,19 @@ impl ProfileCard {
 }
 
 /// Graphics
-impl ProfileCard {
+impl List {
     /// Calls egui to draw everything to the screen
-    pub fn render(&mut self, ui: &mut egui::Ui) {
-        self.fetch_data(ui.ctx());
-        ui.horizontal(|ui| {
-            ui.image(format!(
-                "http://127.0.0.1:8080/static/avatars/{}",
-                self.inner.avatar
-            ));
-            ui.separator();
-            ui.vertical(|ui| {
-                ui.label(format!(
-                    "{} {}",
-                    self.inner.name_primary.clone(),
-                    self.inner.name_supplementary.clone().unwrap_or_default()
-                ));
-                ui.label(self.university_name.clone());
-                ui.separator();
-                ui.label(self.inner.bio.clone().unwrap_or_default());
-            });
+    pub fn render(&mut self, ctx: &egui::Context, should_display: &mut bool) {
+        self.fetch_data(ctx);
+
+        let window = egui::Window::new(self.title.clone())
+            .default_pos(self.starting_pos)
+            .collapsible(false)
+            .open(should_display);
+        window.show(ctx, |ui| {
+            for each in &mut self.profiles {
+                each.render(ui);
+            }
         });
     }
 }
