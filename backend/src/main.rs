@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 use sea_orm::ActiveValue::Set;
 use sea_orm::{ColumnTrait, Database, EntityTrait, QueryFilter};
 use std::io::Write;
+use std::path::PathBuf;
 use std::{error::Error, io, str::FromStr};
 
 use backend::server;
@@ -14,13 +15,16 @@ struct Cli {
     db_uri: String,
 
     #[command(subcommand)]
-    command: Option<Commands>,
+    command: Commands,
 }
 
 #[derive(Subcommand)]
 enum Commands {
     /// Runs the server
-    Server,
+    Server {
+        #[arg(help = "Path to the assets directory")]
+        assets_root: String,
+    },
     /// Run database migration
     Migrate,
     /// List data from database
@@ -34,17 +38,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let args = Cli::parse();
 
     match args.command {
-        Some(Commands::Server) | None => run_server(args.db_uri).await,
-        Some(Commands::Migrate) => run_migration(args.db_uri).await,
-        Some(Commands::List { kind }) => list(args.db_uri, kind).await,
-        Some(Commands::Add { kind }) => interactive_add(args.db_uri, kind).await,
+        Commands::Server { assets_root } => run_server(args.db_uri, assets_root).await,
+        Commands::Migrate => run_migration(args.db_uri).await,
+        Commands::List { kind } => list(args.db_uri, kind).await,
+        Commands::Add { kind } => interactive_add(args.db_uri, kind).await,
     }?;
 
     Ok(())
 }
 
 /// Actually starts the server
-async fn run_server(uri: String) -> Result<(), Box<dyn Error>> {
+async fn run_server(uri: String, assets_root: String) -> Result<(), Box<dyn Error>> {
     let db = Database::connect(uri).await?;
     let pending = Migrator::get_pending_migrations(&db).await?;
     if !pending.is_empty() {
@@ -53,7 +57,7 @@ async fn run_server(uri: String) -> Result<(), Box<dyn Error>> {
         println!("Success");
     }
     println!("Running server");
-    server::run(db).await?;
+    server::run(db, assets_root).await?;
     Ok(())
 }
 

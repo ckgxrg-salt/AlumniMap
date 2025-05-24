@@ -7,6 +7,7 @@ use crate::routes;
 #[derive(Clone)]
 pub struct AppState {
     pub db: DatabaseConnection,
+    pub assets_root: String,
 }
 
 /// Errors that may happen in the App
@@ -31,8 +32,11 @@ impl Display for AppError {
 /// # Errors
 /// If the app fails to connect to the given database or cannot bind to the specified port, it will not run and exit immediately.
 /// If the app encounters a runtime error, it will halt and return a [`AppError::RuntimeErr`].
-pub async fn run(db: DatabaseConnection) -> Result<(), AppError> {
-    let state = AppState { db };
+pub async fn run(db: DatabaseConnection, assets_root: String) -> Result<(), AppError> {
+    let state = AppState {
+        db,
+        assets_root: assets_root.clone(),
+    };
     let mut server = HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(state.clone()))

@@ -9,6 +9,6 @@ pub fn setup(cfg: &mut web::ServiceConfig) {
             .service(handlers::universities)
             .service(handlers::profiles),
     )
-    .service(web::scope("/static").service(handlers::map))
+    .service(handlers::png)
     .service(actix_files::Files::new("/", "frontend/dist").index_file("index.html"));
 }

@@ -1,14 +1,20 @@
 use actix_files::NamedFile;
-use actix_web::{get, web, HttpResponse};
+use actix_web::{get, web, HttpRequest, HttpResponse};
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use std::path::PathBuf;
 
 use crate::server::AppState;
 use entity::{profile, university};
 
-#[get("/world.svg")]
-pub async fn map() -> actix_web::Result<NamedFile> {
-    let path: PathBuf = PathBuf::from("frontend/assets/world.svg");
+#[get("/static/{filename:.*}")]
+pub async fn png(req: HttpRequest, state: web::Data<AppState>) -> actix_web::Result<NamedFile> {
+    let mut path: PathBuf = req.match_info().query("filename").parse().unwrap();
+    if path.extension().is_none_or(|ext| ext != "png") {
+        return Err(actix_web::error::ErrorNotFound(
+            "This site serves only images",
+        ));
+    }
+    path = PathBuf::from(state.assets_root.clone()).join(path);
     Ok(NamedFile::open(path)?)
 }
 
