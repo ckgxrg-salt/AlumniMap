@@ -94,7 +94,7 @@ impl WorldMap {
         // Map itself
         let mut real_internal_area = self.internal_area;
         let scene = egui::Scene::new().zoom_range(1.0..=10.0);
-        scene.show(ui, &mut real_internal_area, |ui| {
+        let scene_res = scene.show(ui, &mut real_internal_area, |ui| {
             let image = egui::Image::new("http://127.0.0.1:8080/static/world.svg")
                 .sense(egui::Sense::CLICK | egui::Sense::HOVER);
             let image_res = ui.add(image);
@@ -102,7 +102,7 @@ impl WorldMap {
             self.draw_base_and_lines(ui, area);
             self.draw_points(ui, area);
             if let Some(click_pos) = image_res.interact_pointer_pos() {
-                self.check_click(click_pos, area);
+                self.check_click(ui, click_pos, area);
             }
             if let Some(hover_pos) = image_res.hover_pos() {
                 self.check_hover(ui, hover_pos, area);
@@ -164,7 +164,7 @@ impl WorldMap {
     }
 
     /// Handles the logic when a destination point is clicked
-    fn check_click(&mut self, click_pos: Pos2, area: Rect) {
+    fn check_click(&mut self, ui: &egui::Ui, click_pos: Pos2, area: Rect) {
         for each in &self.dests {
             let norm_coord = Pos2::new(
                 (click_pos.x - area.left()) / area.width(),
@@ -174,11 +174,10 @@ impl WorldMap {
             if distance < 5.0 / area.height() / area.height() * self.internal_area.height()
                 && !self.popups.iter().any(|list| list.0.uni_id == each.id)
             {
-                let popup = List::new(
-                    each.title.clone(),
-                    each.id,
-                    to_ui_coords(to_norm_coords(each.longitude, each.latitude), area),
-                );
+                let starting_pos = ui
+                    .input(|input| input.pointer.interact_pos())
+                    .unwrap_or_default();
+                let popup = List::new(each.title.clone(), each.id, starting_pos);
                 self.popups.push((popup, true));
             }
         }

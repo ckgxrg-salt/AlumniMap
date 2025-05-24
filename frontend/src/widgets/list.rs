@@ -84,7 +84,7 @@ impl List {
         self.fetch_data(ctx);
 
         let window = egui::Window::new(self.title.clone())
-            .default_pos(self.starting_pos)
+            .current_pos(self.starting_pos)
             .collapsible(false)
             .open(should_display);
         window.show(ctx, |ui| {

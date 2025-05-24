@@ -86,11 +86,13 @@ impl ProfileCard {
             ui.separator();
             ui.vertical(|ui| {
                 ui.label(format!(
-                    "{} {}",
+                    "{} {}          {}届",
                     self.inner.name_primary.clone(),
-                    self.inner.name_supplementary.clone().unwrap_or_default()
+                    self.inner.name_supplementary.clone().unwrap_or_default(),
+                    self.inner.class_of
                 ));
-                ui.label(self.university_name.clone());
+                //ui.label(self.university_name.clone());
+                ui.label(self.inner.major.clone().unwrap_or_default());
                 ui.separator();
                 ui.label(self.inner.bio.clone().unwrap_or_default());
             });
