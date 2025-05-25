@@ -109,6 +109,7 @@ impl ProfileCard {
                 self.render_contacts(ui);
             });
         });
+        ui.separator();
     }
 
     /// Draws the collapsible contacts section

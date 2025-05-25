@@ -1,6 +1,6 @@
 //! Draw points and lines on a world map
 
-use egui::{Color32, Pos2, Rect};
+use egui::{Color32, Pos2, Rect, Vec2};
 use std::sync::{Arc, Mutex};
 
 use crate::widgets::list::List;
@@ -93,10 +93,11 @@ impl WorldMap {
 
         // Map itself
         let mut real_internal_area = self.internal_area;
-        let scene = egui::Scene::new().zoom_range(1.0..=10.0);
-        let scene_res = scene.show(ui, &mut real_internal_area, |ui| {
+        let scene = egui::Scene::new().zoom_range(0.1..=10.0);
+        scene.show(ui, &mut real_internal_area, |ui| {
             let image = egui::Image::new("http://127.0.0.1:8080/static/world.svg")
-                .sense(egui::Sense::CLICK | egui::Sense::HOVER);
+                .sense(egui::Sense::CLICK | egui::Sense::HOVER)
+                .fit_to_original_size(1.0);
             let image_res = ui.add(image);
             let area = image_res.rect;
             self.draw_base_and_lines(ui, area);

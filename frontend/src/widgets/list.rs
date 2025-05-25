@@ -88,9 +88,11 @@ impl List {
             .collapsible(false)
             .open(should_display);
         window.show(ctx, |ui| {
-            for each in &mut self.profiles {
-                each.render(ui);
-            }
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                for each in &mut self.profiles {
+                    each.render(ui);
+                }
+            });
         });
     }
 }
