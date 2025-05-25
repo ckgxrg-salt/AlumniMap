@@ -11,5 +11,9 @@ pub fn setup(cfg: &mut web::ServiceConfig) {
             .service(handlers::profiles),
     )
     .service(handlers::png)
-    .service(actix_files::Files::new("/", "frontend/dist").index_file("index.html"));
+    .service(actix_files::Files::new("/", get_dist_dir()).index_file("index.html"));
+}
+
+fn get_dist_dir() -> String {
+    std::env::var("DIST_DIR").unwrap_or(String::from("frontend/dist"))
 }

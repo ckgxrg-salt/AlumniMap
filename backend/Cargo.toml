@@ -5,6 +5,10 @@ authors = ["ckgxrg <ckgxrg@gmail.com>"]
 edition = "2021"
 publish = false
 
+[[bin]]
+name = "alumnimap"
+path = "src/main.rs"
+
 [lints.clippy]
 pedantic = "warn"
 
