@@ -2,7 +2,6 @@ use clap::{Parser, Subcommand};
 use sea_orm::ActiveValue::Set;
 use sea_orm::{ColumnTrait, Database, EntityTrait, QueryFilter};
 use std::io::Write;
-use std::path::PathBuf;
 use std::{error::Error, io, str::FromStr};
 
 use backend::server;
@@ -171,7 +170,7 @@ fn ask_value<T: FromStr>(name: &str) -> T {
         eprintln!("Parse failed");
     }
 }
-fn ask_value_nullable<T: FromStr>(name: &str) -> Option<T> {
+fn ask_value_nullable(name: &str) -> Option<String> {
     let mut value = String::new();
     print!("{name}: ");
     io::stdout().flush().unwrap_or_default();
@@ -179,11 +178,11 @@ fn ask_value_nullable<T: FromStr>(name: &str) -> Option<T> {
         .read_line(&mut value)
         .expect("Failed to read input");
 
-    let parsed = value.trim().parse::<T>();
-    if let Ok(val) = parsed {
-        Some(val)
-    } else {
+    let parsed = value.trim().parse::<String>().unwrap();
+    if parsed.is_empty() {
         eprintln!("Parse failed, implying null");
         None
+    } else {
+        Some(parsed)
     }
 }
