@@ -8,6 +8,7 @@ use entity::profile;
 pub struct ProfileCard {
     inner: profile::Model,
     university_name: String,
+    current_url: String,
     fetch_state: Arc<Mutex<State>>,
 }
 /// The state of fetching data from the backend
@@ -18,18 +19,18 @@ enum State {
     Done,
 }
 
-impl From<profile::Model> for ProfileCard {
-    fn from(value: profile::Model) -> Self {
+/// Data manipulation
+impl ProfileCard {
+    /// Convert from raw model
+    pub fn convert(value: profile::Model, current_url: String) -> Self {
         Self {
             inner: value,
+            current_url,
             university_name: "Loading...".to_string(),
             fetch_state: Arc::new(Mutex::new(State::Init)),
         }
     }
-}
 
-/// Data manipulation
-impl ProfileCard {
     /// Fetches data from the database
     fn fetch_data(&mut self, ctx: &egui::Context) {
         let should_fetch = {
@@ -40,8 +41,8 @@ impl ProfileCard {
             let temp_state = self.fetch_state.clone();
             *temp_state.lock().unwrap() = State::Loading;
             let req = ehttp::Request::get(format!(
-                "http://127.0.0.1:8080/api/universities/{}",
-                self.inner.university_id
+                "{}api/universities/{}",
+                self.current_url, self.inner.university_id
             ));
             ehttp::fetch(req, move |response| {
                 *temp_state.lock().unwrap() = State::Fetched(response);
@@ -80,8 +81,8 @@ impl ProfileCard {
         self.fetch_data(ui.ctx());
         ui.horizontal(|ui| {
             let image = egui::Image::new(format!(
-                "http://127.0.0.1:8080/static/avatars/{}",
-                self.inner.avatar
+                "{}static/avatars/{}",
+                self.current_url, self.inner.avatar
             ))
             .shrink_to_fit();
             ui.add(image);

@@ -12,6 +12,7 @@ pub struct List {
     pub title: String,
     pub uni_id: i32,
     starting_pos: Pos2,
+    current_url: String,
     fetch_state: Arc<Mutex<State>>,
 }
 /// The state of fetching data from the backend
@@ -25,12 +26,13 @@ enum State {
 /// Data manipulation
 impl List {
     /// Creates a new list
-    pub fn new(title: String, uni_id: i32, starting_pos: Pos2) -> Self {
+    pub fn new(title: String, uni_id: i32, starting_pos: Pos2, current_url: String) -> Self {
         Self {
             profiles: Vec::new(),
             title,
             uni_id,
             starting_pos,
+            current_url,
             fetch_state: Arc::new(Mutex::new(State::Init)),
         }
     }
@@ -44,10 +46,8 @@ impl List {
         if should_fetch {
             let temp_state = self.fetch_state.clone();
             *temp_state.lock().unwrap() = State::Loading;
-            let req = ehttp::Request::get(format!(
-                "http://127.0.0.1:8080/api/profiles/{}",
-                self.uni_id
-            ));
+            let req =
+                ehttp::Request::get(format!("{}api/profiles/{}", self.current_url, self.uni_id));
             ehttp::fetch(req, move |response| {
                 *temp_state.lock().unwrap() = State::Fetched(response);
             });
@@ -64,7 +64,9 @@ impl List {
             if let Ok(val) = res {
                 let str: String = val.json().unwrap_or_default();
                 if let Ok(parsed) = serde_json::from_str::<Vec<profile::Model>>(&str) {
-                    let profiles = parsed.into_iter().map(ProfileCard::from);
+                    let profiles = parsed.into_iter().map(|orig: profile::Model| {
+                        ProfileCard::convert(orig, self.current_url.clone())
+                    });
                     self.profiles.extend(profiles);
                 }
                 ctx.request_repaint();

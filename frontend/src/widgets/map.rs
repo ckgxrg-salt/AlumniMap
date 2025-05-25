@@ -1,6 +1,6 @@
 //! Draw points and lines on a world map
 
-use egui::{Color32, Pos2, Rect, Vec2};
+use egui::{Color32, Pos2, Rect};
 use std::sync::{Arc, Mutex};
 
 use crate::widgets::list::List;
@@ -12,7 +12,7 @@ pub struct WorldMap {
     base: university::Model,
     dests: Vec<university::Model>,
     internal_area: Rect,
-    image_url: String,
+    current_url: String,
     fetch_state: Arc<Mutex<State>>,
 
     /// All currently visible [`List`]s
@@ -29,12 +29,12 @@ enum State {
 /// Data manipulation
 impl WorldMap {
     /// Creates a new world map
-    pub fn new(image_url: String, base: university::Model) -> Self {
+    pub fn new(base: university::Model, current_url: String) -> Self {
         Self {
             base,
+            current_url,
             dests: Vec::new(),
             internal_area: Rect::ZERO,
-            image_url,
             fetch_state: Arc::new(Mutex::new(State::Init)),
             popups: Vec::new(),
         }
@@ -49,7 +49,7 @@ impl WorldMap {
         if should_fetch {
             let temp_state = self.fetch_state.clone();
             *temp_state.lock().unwrap() = State::Loading;
-            let req = ehttp::Request::get("http://127.0.0.1:8080/api/universities");
+            let req = ehttp::Request::get(format!("{}api/universities", self.current_url));
             ehttp::fetch(req, move |response| {
                 *temp_state.lock().unwrap() = State::Fetched(response);
             });
@@ -95,7 +95,7 @@ impl WorldMap {
         let mut real_internal_area = self.internal_area;
         let scene = egui::Scene::new().zoom_range(0.1..=10.0);
         scene.show(ui, &mut real_internal_area, |ui| {
-            let image = egui::Image::new("http://127.0.0.1:8080/static/world.svg")
+            let image = egui::Image::new(format!("{}static/world.svg", self.current_url))
                 .sense(egui::Sense::CLICK | egui::Sense::HOVER)
                 .fit_to_original_size(1.0);
             let image_res = ui.add(image);
@@ -178,7 +178,12 @@ impl WorldMap {
                 let starting_pos = ui
                     .input(|input| input.pointer.interact_pos())
                     .unwrap_or_default();
-                let popup = List::new(each.title.clone(), each.id, starting_pos);
+                let popup = List::new(
+                    each.title.clone(),
+                    each.id,
+                    starting_pos,
+                    self.current_url.clone(),
+                );
                 self.popups.push((popup, true));
             }
         }

@@ -33,9 +33,8 @@ pub fn init_font(ctx: &egui::Context) {
     ctx.set_fonts(fonts);
 }
 
-pub fn create_world_map() -> WorldMap {
+pub fn create_world_map(current_url: String) -> WorldMap {
     WorldMap::new(
-        "TODO: Use static assets".to_string(),
         entity::university::Model {
             id: 0,
             title: "Nope".to_string(),
@@ -44,5 +43,6 @@ pub fn create_world_map() -> WorldMap {
             longitude: 23.5,
             latitude: 0.0,
         },
+        current_url,
     )
 }

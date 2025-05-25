@@ -6,12 +6,23 @@ pub struct AlumniMapApp {
 }
 
 impl AlumniMapApp {
+    #[cfg(not(target_arch = "wasm32"))]
     #[must_use]
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         egui_extras::install_image_loaders(&cc.egui_ctx);
         init::init_font(&cc.egui_ctx);
         Self {
-            world_map: init::create_world_map(),
+            world_map: init::create_world_map(String::new()),
+        }
+    }
+    #[cfg(target_arch = "wasm32")]
+    #[must_use]
+    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+        egui_extras::install_image_loaders(&cc.egui_ctx);
+        init::init_font(&cc.egui_ctx);
+        let url = web_sys::window().unwrap().location().href().unwrap();
+        Self {
+            world_map: init::create_world_map(url),
         }
     }
 }
