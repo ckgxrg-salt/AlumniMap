@@ -4,9 +4,8 @@ version = "0.1.0"
 authors = ["ckgxrg <ckgxrg@gmail.com>"]
 edition = "2021"
 
-[package.metadata.docs.rs]
-all-features = true
-targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
+[lib]
+crate-type = ["cdylib"]
 
 [lints.clippy]
 pedantic = "warn"
@@ -25,12 +24,5 @@ image = "0.25.6"
 ehttp = { version = "0.5.0", features = ["json"] }
 serde_json = "1.0.140"
 entity = { path = "../entity" }
-
-# native:
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-env_logger = "0.11.8"
-
-# web:
-[target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "0.4.50"
 web-sys = "0.3.70"

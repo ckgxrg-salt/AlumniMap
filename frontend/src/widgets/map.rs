@@ -95,7 +95,7 @@ impl WorldMap {
         let mut real_internal_area = self.internal_area;
         let scene = egui::Scene::new().zoom_range(0.1..=10.0);
         scene.show(ui, &mut real_internal_area, |ui| {
-            let image = egui::Image::new(format!("{}static/world.svg", self.current_url))
+            let image = egui::Image::new(egui::include_image!("../../assets/world.svg"))
                 .sense(egui::Sense::CLICK | egui::Sense::HOVER)
                 .fit_to_original_size(1.0);
             let image_res = ui.add(image);
