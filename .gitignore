@@ -6,6 +6,7 @@
 # will have compiled files and executables
 debug/
 target/
+dev-config.toml
 
 # include cargo lock
 !Cargo.lock
@@ -22,3 +23,4 @@ target/
 
 dist/
 result
+.tmp

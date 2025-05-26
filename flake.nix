@@ -48,5 +48,36 @@
         ];
         LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath buildInputs}";
       };
+
+      # A simple database container
+      nixosConfigurations."container" = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        modules = [
+          (
+            { ... }:
+            {
+              boot.isContainer = true;
+              system.stateVersion = "25.05";
+              networking.firewall.allowedTCPPorts = [ 5432 ];
+              services.postgresql = {
+                enable = true;
+                enableTCPIP = true;
+                ensureUsers = [
+                  {
+                    name = "alumnimap";
+                    ensureDBOwnership = true;
+                  }
+                ];
+                ensureDatabases = [ "alumnimap" ];
+              };
+              users.users."alumnimap" = {
+                isSystemUser = true;
+                group = "alumnimap";
+              };
+              users.groups."alumnimap" = { };
+            }
+          )
+        ];
+      };
     };
 }
