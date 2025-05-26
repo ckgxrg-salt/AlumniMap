@@ -1,5 +1,16 @@
+use std::sync::LazyLock;
+
 use crate::init;
 use crate::widgets::map::WorldMap;
+
+pub static APP_URL: LazyLock<String> = LazyLock::new(get_app_url);
+fn get_app_url() -> String {
+    web_sys::window()
+        .expect("Cannot get current window object, do your browser support it?")
+        .location()
+        .href()
+        .expect("Cannot get current href, do your browser support it?")
+}
 
 pub struct AlumniMapApp {
     world_map: WorldMap,
@@ -10,9 +21,8 @@ impl AlumniMapApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         egui_extras::install_image_loaders(&cc.egui_ctx);
         init::init_font(&cc.egui_ctx);
-        let url = web_sys::window().unwrap().location().href().unwrap();
         Self {
-            world_map: init::create_world_map(url),
+            world_map: init::create_world_map(),
         }
     }
 }

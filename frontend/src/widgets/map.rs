@@ -2,6 +2,7 @@
 
 use egui::{Color32, Pos2, Rect};
 
+use crate::app::APP_URL;
 use crate::fetcher::FetchedData;
 use crate::widgets::list::List;
 use entity::university;
@@ -12,7 +13,6 @@ pub struct WorldMap {
     base: university::Model,
     dests: FetchedData<Vec<university::Model>>,
     internal_area: Rect,
-    current_url: String,
 
     /// All currently visible [`List`]s
     popups: Vec<(List, bool)>,
@@ -21,14 +21,13 @@ pub struct WorldMap {
 /// Data manipulation
 impl WorldMap {
     /// Creates a new world map
-    pub fn new(base: university::Model, current_url: String) -> Self {
-        let dests = FetchedData::new(format!("{current_url}api/universities"), |response| {
+    pub fn new(base: university::Model) -> Self {
+        let dests = FetchedData::new(format!("{}api/universities", *APP_URL), |response| {
             let str: String = response.json().unwrap_or_default();
             serde_json::from_str::<Vec<university::Model>>(&str).ok()
         });
         Self {
             base,
-            current_url,
             dests,
             internal_area: Rect::ZERO,
             popups: Vec::new(),
@@ -134,12 +133,7 @@ impl WorldMap {
                     let starting_pos = ui
                         .input(|input| input.pointer.interact_pos())
                         .unwrap_or_default();
-                    let popup = List::new(
-                        each.title.clone(),
-                        each.id,
-                        starting_pos,
-                        self.current_url.clone(),
-                    );
+                    let popup = List::new(each.title.clone(), each.id, starting_pos);
                     self.popups.push((popup, true));
                 }
             }

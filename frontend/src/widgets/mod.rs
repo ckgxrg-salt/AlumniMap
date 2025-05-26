@@ -1,3 +1,3 @@
 pub mod list;
 pub mod map;
-pub mod profile;
+pub mod profile_card;
