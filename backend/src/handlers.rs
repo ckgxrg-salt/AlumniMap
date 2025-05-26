@@ -35,6 +35,11 @@ pub async fn universities(state: web::Data<AppState>) -> HttpResponse {
     }
 }
 
+#[get("/base")]
+pub async fn base(state: web::Data<AppState>) -> HttpResponse {
+    HttpResponse::Ok().json(serde_json::to_string(&state.base).unwrap_or_default())
+}
+
 #[get("/universities/{uni_id}")]
 pub async fn get_uni_name(state: web::Data<AppState>, path: web::Path<i32>) -> HttpResponse {
     let list = university::Entity::find_by_id(path.into_inner())

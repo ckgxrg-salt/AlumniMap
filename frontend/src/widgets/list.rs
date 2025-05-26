@@ -4,7 +4,7 @@ use egui::Pos2;
 
 use crate::app::APP_URL;
 use crate::fetcher::FetchedData;
-use crate::widgets::profile_card;
+use crate::widgets::card;
 use entity::profile;
 
 /// A list contains many profile cards
@@ -49,7 +49,7 @@ impl List {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 if let Some(data) = &self.profiles.data {
                     for each in data {
-                        profile_card::render(each, ui);
+                        card::render(each, ui);
                     }
                 }
             });

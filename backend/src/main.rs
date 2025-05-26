@@ -1,6 +1,8 @@
 use clap::{Parser, Subcommand};
+use config::Config;
 use sea_orm::ActiveValue::Set;
 use sea_orm::{ColumnTrait, Database, EntityTrait, QueryFilter};
+use std::collections::HashMap;
 use std::io::Write;
 use std::{error::Error, io, str::FromStr};
 
@@ -10,8 +12,12 @@ use migration::{Migrator, MigratorTrait};
 
 #[derive(Parser)]
 struct Cli {
-    #[arg(long = "database-uri", help = "Database URI")]
-    db_uri: String,
+    #[arg(
+        long = "config",
+        default_value = "/var/lib/alumnimap/config.toml",
+        help = "Config file"
+    )]
+    config: String,
 
     #[command(subcommand)]
     command: Commands,
@@ -20,10 +26,7 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// Runs the server
-    Server {
-        #[arg(help = "Path to the assets directory")]
-        assets_root: String,
-    },
+    Server,
     /// Run database migration
     Migrate,
     /// List data from database
@@ -36,18 +39,68 @@ enum Commands {
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = Cli::parse();
 
+    let config = Config::builder()
+        .add_source(config::File::with_name(&args.config))
+        .add_source(config::Environment::with_prefix("ALUMNIMAP"))
+        .build()
+        .expect("Failed to read config");
+
+    let settings = config
+        .try_deserialize::<HashMap<String, String>>()
+        .expect("Failed to read config");
+
+    let db_uri = settings
+        .get("database_uri")
+        .expect("Config file didn't specify database_uri");
+    let assets_root = settings
+        .get("assets_root")
+        .expect("Config file didn't specify database_uri");
+    let base_point = build_base_point(&settings);
+
     match args.command {
-        Commands::Server { assets_root } => run_server(args.db_uri, assets_root).await,
-        Commands::Migrate => run_migration(args.db_uri).await,
-        Commands::List { kind } => list(args.db_uri, kind).await,
-        Commands::Add { kind } => interactive_add(args.db_uri, kind).await,
+        Commands::Server => run_server(db_uri, assets_root, base_point).await,
+        Commands::Migrate => run_migration(db_uri).await,
+        Commands::List { kind } => list(db_uri, &kind).await,
+        Commands::Add { kind } => interactive_add(db_uri, &kind).await,
     }?;
 
     Ok(())
 }
+fn build_base_point(config: &HashMap<String, String>) -> university::Model {
+    let title = config
+        .get("base.title")
+        .expect("Config file didn't specify base.title")
+        .to_string();
+    let longitude = config
+        .get("base.longitude")
+        .expect("Config file didn't specify base.longitude")
+        .parse()
+        .expect("Invalid base.longitude");
+    let latitude = config
+        .get("base.latitude")
+        .expect("Config file didn't specify base.latitude")
+        .parse()
+        .expect("Invalid base.latitude");
+    let colour = config
+        .get("base.colour")
+        .expect("Config file didn't specify base.colour")
+        .to_string();
+    university::Model {
+        id: -1,
+        icon: String::new(),
+        title,
+        colour,
+        longitude,
+        latitude,
+    }
+}
 
 /// Actually starts the server
-async fn run_server(uri: String, assets_root: String) -> Result<(), Box<dyn Error>> {
+async fn run_server(
+    uri: &str,
+    assets_root: &str,
+    base_point: university::Model,
+) -> Result<(), Box<dyn Error>> {
     let db = Database::connect(uri).await?;
     let pending = Migrator::get_pending_migrations(&db).await?;
     if !pending.is_empty() {
@@ -56,12 +109,12 @@ async fn run_server(uri: String, assets_root: String) -> Result<(), Box<dyn Erro
         println!("Success");
     }
     println!("Running server");
-    server::run(db, assets_root).await?;
+    server::run(db, assets_root, base_point).await?;
     Ok(())
 }
 
 /// Ensure the database is ready
-async fn run_migration(uri: String) -> Result<(), Box<dyn Error>> {
+async fn run_migration(uri: &str) -> Result<(), Box<dyn Error>> {
     let db = Database::connect(uri).await?;
     println!("Running migration");
     Migrator::up(&db, None).await?;
@@ -70,7 +123,7 @@ async fn run_migration(uri: String) -> Result<(), Box<dyn Error>> {
 }
 
 /// See all entries
-async fn list(uri: String, kind: String) -> Result<(), Box<dyn Error>> {
+async fn list(uri: &str, kind: &str) -> Result<(), Box<dyn Error>> {
     let db = Database::connect(uri).await?;
     if kind.eq("university") {
         let list = university::Entity::find().all(&db).await?;
@@ -95,7 +148,7 @@ async fn list(uri: String, kind: String) -> Result<(), Box<dyn Error>> {
     }
 }
 /// Add an entry in the terminal
-async fn interactive_add(uri: String, kind: String) -> Result<(), Box<dyn Error>> {
+async fn interactive_add(uri: &str, kind: &str) -> Result<(), Box<dyn Error>> {
     let db = Database::connect(uri).await?;
     if kind.eq("university") {
         println!("Creating new University");

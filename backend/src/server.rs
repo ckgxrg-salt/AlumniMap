@@ -3,11 +3,13 @@ use sea_orm::DatabaseConnection;
 use std::{error::Error, fmt::Display};
 
 use crate::routes;
+use entity::university;
 
 #[derive(Clone)]
 pub struct AppState {
     pub db: DatabaseConnection,
     pub assets_root: String,
+    pub base: university::Model,
 }
 
 /// Errors that may happen in the App
@@ -32,10 +34,15 @@ impl Display for AppError {
 /// # Errors
 /// If the app fails to connect to the given database or cannot bind to the specified port, it will not run and exit immediately.
 /// If the app encounters a runtime error, it will halt and return a [`AppError::RuntimeErr`].
-pub async fn run(db: DatabaseConnection, assets_root: String) -> Result<(), AppError> {
+pub async fn run(
+    db: DatabaseConnection,
+    assets_root: &str,
+    base: university::Model,
+) -> Result<(), AppError> {
     let state = AppState {
         db,
-        assets_root: assets_root.clone(),
+        assets_root: assets_root.to_string(),
+        base,
     };
     let mut server = HttpServer::new(move || {
         App::new()
