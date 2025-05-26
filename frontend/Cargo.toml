@@ -23,3 +23,4 @@ serde_json = "1.0.140"
 entity = { path = "../entity" }
 wasm-bindgen-futures = "0.4.50"
 web-sys = "0.3.70"
+catppuccin-egui = { version = "5.5.0", default-features = false, features = ["egui31"] }

@@ -21,6 +21,7 @@ impl AlumniMapApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         egui_extras::install_image_loaders(&cc.egui_ctx);
         init::init_font(&cc.egui_ctx);
+        init::set_theme(&cc.egui_ctx);
         Self {
             world_map: WorldMap::new(),
         }

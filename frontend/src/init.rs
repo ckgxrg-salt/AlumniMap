@@ -2,8 +2,6 @@
 
 use egui::{FontData, FontDefinitions};
 
-use crate::widgets::map::WorldMap;
-
 pub fn init_font(ctx: &egui::Context) {
     let mut fonts = FontDefinitions::default();
     fonts.font_data.insert(
@@ -31,4 +29,8 @@ pub fn init_font(ctx: &egui::Context) {
         .insert(0, "notosans-nf".to_owned());
 
     ctx.set_fonts(fonts);
+}
+
+pub fn set_theme(ctx: &egui::Context) {
+    catppuccin_egui::set_theme(ctx, catppuccin_egui::FRAPPE);
 }
