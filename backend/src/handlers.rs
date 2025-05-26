@@ -1,25 +1,28 @@
 use actix_files::NamedFile;
-use actix_web::{get, web, HttpRequest, HttpResponse, Responder};
-use actix_web_rust_embed_responder::IntoResponse;
-use rust_embed_for_web::RustEmbed;
+use actix_web::{get, web, HttpRequest, HttpResponse};
+use rust_embed::Embed;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use std::path::PathBuf;
 
 use crate::server::AppState;
 use entity::{profile, university};
 
-#[derive(RustEmbed)]
+#[derive(Embed)]
 #[folder = "../frontend/dist"]
 struct Dist;
 
 #[get("/{path:.*}")]
-pub async fn index(path: web::Path<String>) -> impl Responder {
-    let path = if path.is_empty() {
-        "index.html"
-    } else {
-        path.as_str()
-    };
-    Dist::get(path).into_response()
+pub async fn index(path: web::Path<String>) -> HttpResponse {
+    let mut path = path.into_inner();
+    if path.is_empty() {
+        path = "index.html".to_string();
+    }
+    match Dist::get(&path) {
+        Some(content) => HttpResponse::Ok()
+            .content_type(mime_guess::from_path(path).first_or_octet_stream().as_ref())
+            .body(content.data.into_owned()),
+        None => HttpResponse::NotFound().body("404 Not Found"),
+    }
 }
 
 #[get("/static/{filename:.*}")]
