@@ -30,18 +30,12 @@ impl AlumniMapApp {
 
 impl eframe::App for AlumniMapApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            egui::menu::bar(ui, |ui| {
-                egui::widgets::global_theme_preference_buttons(ui);
-            });
-        });
-
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.separator();
 
             self.world_map.render(ui);
 
-            ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
+            ui.with_layout(egui::Layout::bottom_up(egui::Align::RIGHT), |ui| {
                 credits(ui);
                 egui::warn_if_debug_build(ui);
             });
@@ -51,15 +45,14 @@ impl eframe::App for AlumniMapApp {
 
 fn credits(ui: &mut egui::Ui) {
     ui.horizontal(|ui| {
-        ui.spacing_mut().item_spacing.x = 0.0;
-        ui.hyperlink_to("AlumniMap", "https://github.com/ckgxrg-salt/Alumnimap");
-        ui.label(" by ");
-        ui.hyperlink_to("ckgxrg", "https://ckgxrg.io");
-        ui.label(". Free software under ");
         ui.hyperlink_to(
-            "GPLv3 License",
+            "GPLv3 License.",
             "https://www.gnu.org/licenses/gpl-3.0.en.html",
         );
-        ui.label(".");
+        ui.label("Free software under");
+        ui.hyperlink_to("ckgxrg.", "https://ckgxrg.io");
+        ui.label("by");
+        ui.hyperlink_to("AlumniMap", "https://github.com/ckgxrg-salt/Alumnimap");
+        ui.spacing_mut().item_spacing.x = 0.0;
     });
 }

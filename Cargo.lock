@@ -689,7 +689,7 @@ dependencies = [
 
 [[package]]
 name = "backend"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "actix-files",
  "actix-web",
@@ -1736,7 +1736,7 @@ dependencies = [
 
 [[package]]
 name = "entity"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "sea-orm",
  "serde",
@@ -1954,7 +1954,7 @@ dependencies = [
 
 [[package]]
 name = "frontend"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "catppuccin-egui",
  "eframe",
@@ -3027,7 +3027,7 @@ dependencies = [
 
 [[package]]
 name = "migration"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "async-std",
  "sea-orm-migration",

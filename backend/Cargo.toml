@@ -1,9 +1,8 @@
 [package]
 name = "backend"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["ckgxrg <ckgxrg@gmail.com>"]
 edition = "2021"
-publish = false
 
 [[bin]]
 name = "alumnimap"

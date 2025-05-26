@@ -43,6 +43,7 @@ impl WorldMap {
 impl WorldMap {
     /// Calls egui to draw everything to the screen
     pub fn render(&mut self, ui: &mut egui::Ui) {
+        self.base.poll();
         self.dests.poll();
 
         // Map itself
