@@ -1,86 +1,37 @@
 //! Draw points and lines on a world map
 
 use egui::{Color32, Pos2, Rect};
-use std::sync::{Arc, Mutex};
 
+use crate::fetcher::FetchedData;
 use crate::widgets::list::List;
 use entity::university;
 
 /// The world map on the main interface
 pub struct WorldMap {
-    /// All dest [`Point`]s will draw a line from the base [`Point`]
+    /// All dests will draw a line from the base point
     base: university::Model,
-    dests: Vec<university::Model>,
+    dests: FetchedData<Vec<university::Model>>,
     internal_area: Rect,
     current_url: String,
-    fetch_state: Arc<Mutex<State>>,
 
     /// All currently visible [`List`]s
     popups: Vec<(List, bool)>,
-}
-/// The state of fetching data from the backend
-enum State {
-    Init,
-    Loading,
-    Fetched(ehttp::Result<ehttp::Response>),
-    Done,
 }
 
 /// Data manipulation
 impl WorldMap {
     /// Creates a new world map
     pub fn new(base: university::Model, current_url: String) -> Self {
+        let dests = FetchedData::new(format!("{current_url}api/universities"), |response| {
+            let str: String = response.json().unwrap_or_default();
+            serde_json::from_str::<Vec<university::Model>>(&str).ok()
+        });
         Self {
             base,
             current_url,
-            dests: Vec::new(),
+            dests,
             internal_area: Rect::ZERO,
-            fetch_state: Arc::new(Mutex::new(State::Init)),
             popups: Vec::new(),
-        }
-    }
-
-    /// Fetches data from the database
-    fn fetch_data(&mut self, ui: &mut egui::Ui) {
-        let should_fetch = {
-            let fetch_state: &State = &self.fetch_state.lock().unwrap();
-            matches!(fetch_state, State::Init)
-        };
-        if should_fetch {
-            let temp_state = self.fetch_state.clone();
-            *temp_state.lock().unwrap() = State::Loading;
-            let req = ehttp::Request::get(format!("{}api/universities", self.current_url));
-            ehttp::fetch(req, move |response| {
-                *temp_state.lock().unwrap() = State::Fetched(response);
-            });
-        }
-        let should_loading = {
-            let fetch_state: &State = &self.fetch_state.lock().unwrap();
-            matches!(fetch_state, State::Loading)
-        };
-        if should_loading {
-            ui.label("Loading...");
-        }
-        let response = {
-            let fetch_state: &State = &self.fetch_state.lock().unwrap();
-            if let State::Fetched(response) = fetch_state {
-                Some(response.clone())
-            } else {
-                None
-            }
-        };
-        if let Some(res) = response {
-            if let Ok(val) = res {
-                let str: String = val.json().unwrap_or_default();
-                if let Ok(parsed) = serde_json::from_str::<Vec<university::Model>>(&str) {
-                    self.dests.extend(parsed);
-                }
-                ui.ctx().request_repaint();
-                *self.fetch_state.lock().unwrap() = State::Done;
-            } else {
-                // Continue to try
-                *self.fetch_state.lock().unwrap() = State::Init;
-            }
         }
     }
 }
@@ -89,7 +40,7 @@ impl WorldMap {
 impl WorldMap {
     /// Calls egui to draw everything to the screen
     pub fn render(&mut self, ui: &mut egui::Ui) {
-        self.fetch_data(ui);
+        self.dests.poll();
 
         // Map itself
         let mut real_internal_area = self.internal_area;
@@ -132,12 +83,14 @@ impl WorldMap {
             to_norm_coords(self.base.longitude, self.base.latitude),
             area,
         );
-        for each in &self.dests {
-            let dest_pos = to_ui_coords(to_norm_coords(each.longitude, each.latitude), area);
-            painter.line_segment(
-                [base_pos, dest_pos],
-                egui::Stroke::new(1.0, Color32::from_hex(&each.colour).unwrap_or_default()),
-            );
+        if let Some(data) = &self.dests.data {
+            for each in data {
+                let dest_pos = to_ui_coords(to_norm_coords(each.longitude, each.latitude), area);
+                painter.line_segment(
+                    [base_pos, dest_pos],
+                    egui::Stroke::new(1.0, Color32::from_hex(&each.colour).unwrap_or_default()),
+                );
+            }
         }
         painter.circle(
             base_pos,
@@ -153,59 +106,65 @@ impl WorldMap {
     /// Recursively draws all destination points
     fn draw_points(&self, ui: &egui::Ui, area: Rect) {
         let painter = ui.painter();
-        for each in &self.dests {
-            let draw_pos = to_ui_coords(to_norm_coords(each.longitude, each.latitude), area);
-            painter.circle(
-                draw_pos,
-                5.0 / area.height() * self.internal_area.height(),
-                Color32::from_hex(&each.colour).unwrap_or_default(),
-                egui::Stroke::new(1.0, Color32::from_hex(&each.colour).unwrap_or_default()),
-            );
+        if let Some(data) = &self.dests.data {
+            for each in data {
+                let draw_pos = to_ui_coords(to_norm_coords(each.longitude, each.latitude), area);
+                painter.circle(
+                    draw_pos,
+                    5.0 / area.height() * self.internal_area.height(),
+                    Color32::from_hex(&each.colour).unwrap_or_default(),
+                    egui::Stroke::new(1.0, Color32::from_hex(&each.colour).unwrap_or_default()),
+                );
+            }
         }
     }
 
     /// Handles the logic when a destination point is clicked
     fn check_click(&mut self, ui: &egui::Ui, click_pos: Pos2, area: Rect) {
-        for each in &self.dests {
-            let norm_coord = Pos2::new(
-                (click_pos.x - area.left()) / area.width(),
-                (click_pos.y - area.top()) / area.height(),
-            );
-            let distance = norm_coord.distance(to_norm_coords(each.longitude, each.latitude));
-            if distance < 5.0 / area.height() / area.height() * self.internal_area.height()
-                && !self.popups.iter().any(|list| list.0.uni_id == each.id)
-            {
-                let starting_pos = ui
-                    .input(|input| input.pointer.interact_pos())
-                    .unwrap_or_default();
-                let popup = List::new(
-                    each.title.clone(),
-                    each.id,
-                    starting_pos,
-                    self.current_url.clone(),
+        if let Some(data) = &self.dests.data {
+            for each in data {
+                let norm_coord = Pos2::new(
+                    (click_pos.x - area.left()) / area.width(),
+                    (click_pos.y - area.top()) / area.height(),
                 );
-                self.popups.push((popup, true));
+                let distance = norm_coord.distance(to_norm_coords(each.longitude, each.latitude));
+                if distance < 5.0 / area.height() / area.height() * self.internal_area.height()
+                    && !self.popups.iter().any(|list| list.0.uni_id == each.id)
+                {
+                    let starting_pos = ui
+                        .input(|input| input.pointer.interact_pos())
+                        .unwrap_or_default();
+                    let popup = List::new(
+                        each.title.clone(),
+                        each.id,
+                        starting_pos,
+                        self.current_url.clone(),
+                    );
+                    self.popups.push((popup, true));
+                }
             }
         }
     }
 
     /// Handles the logic when the cursor hovers over a destination point
     fn check_hover(&self, ui: &egui::Ui, hover_pos: Pos2, area: Rect) {
-        for each in &self.dests {
-            let norm_coord = Pos2::new(
-                (hover_pos.x - area.left()) / area.width(),
-                (hover_pos.y - area.top()) / area.height(),
-            );
-            let distance = norm_coord.distance(to_norm_coords(each.longitude, each.latitude));
-            if distance < 5.0 / area.height() / area.height() * self.internal_area.height() {
-                egui::show_tooltip_at_pointer(
-                    ui.ctx(),
-                    ui.layer_id(),
-                    egui::Id::new("dest_points_tooltip"),
-                    |ui| {
-                        ui.label(each.title.clone());
-                    },
+        if let Some(data) = &self.dests.data {
+            for each in data {
+                let norm_coord = Pos2::new(
+                    (hover_pos.x - area.left()) / area.width(),
+                    (hover_pos.y - area.top()) / area.height(),
                 );
+                let distance = norm_coord.distance(to_norm_coords(each.longitude, each.latitude));
+                if distance < 5.0 / area.height() / area.height() * self.internal_area.height() {
+                    egui::show_tooltip_at_pointer(
+                        ui.ctx(),
+                        ui.layer_id(),
+                        egui::Id::new("dest_points_tooltip"),
+                        |ui| {
+                            ui.label(each.title.clone());
+                        },
+                    );
+                }
             }
         }
     }

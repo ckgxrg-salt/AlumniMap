@@ -1,22 +1,11 @@
 //! Each individual's profile card
 
-use std::sync::{Arc, Mutex};
-
 use entity::profile;
 
 /// A list contains many profile cards
 pub struct ProfileCard {
     inner: profile::Model,
-    university_name: String,
     current_url: String,
-    fetch_state: Arc<Mutex<State>>,
-}
-/// The state of fetching data from the backend
-enum State {
-    Init,
-    Loading,
-    Fetched(ehttp::Result<ehttp::Response>),
-    Done,
 }
 
 /// Data manipulation
@@ -26,50 +15,6 @@ impl ProfileCard {
         Self {
             inner: value,
             current_url,
-            university_name: "Loading...".to_string(),
-            fetch_state: Arc::new(Mutex::new(State::Init)),
-        }
-    }
-
-    /// Fetches data from the database
-    fn fetch_data(&mut self, ctx: &egui::Context) {
-        let should_fetch = {
-            let fetch_state: &State = &self.fetch_state.lock().unwrap();
-            matches!(fetch_state, State::Init)
-        };
-        if should_fetch {
-            let temp_state = self.fetch_state.clone();
-            *temp_state.lock().unwrap() = State::Loading;
-            let req = ehttp::Request::get(format!(
-                "{}api/universities/{}",
-                self.current_url, self.inner.university_id
-            ));
-            ehttp::fetch(req, move |response| {
-                *temp_state.lock().unwrap() = State::Fetched(response);
-            });
-        }
-        let response = {
-            let fetch_state: &State = &self.fetch_state.lock().unwrap();
-            if let State::Fetched(response) = fetch_state {
-                Some(response.clone())
-            } else {
-                None
-            }
-        };
-        if let Some(res) = response {
-            if let Ok(val) = res {
-                let str = val.text();
-                if let Some(text) = str {
-                    self.university_name = text.to_string();
-                } else {
-                    self.university_name = "Unknown University".to_string();
-                }
-                ctx.request_repaint();
-                *self.fetch_state.lock().unwrap() = State::Done;
-            } else {
-                // Continue to try
-                *self.fetch_state.lock().unwrap() = State::Init;
-            }
         }
     }
 }
@@ -78,7 +23,6 @@ impl ProfileCard {
 impl ProfileCard {
     /// Calls egui to draw everything to the screen
     pub fn render(&mut self, ui: &mut egui::Ui) {
-        self.fetch_data(ui.ctx());
         ui.horizontal(|ui| {
             let image = egui::Image::new(format!(
                 "{}static/avatars/{}",
@@ -97,7 +41,6 @@ impl ProfileCard {
                         ui.label(format!("{}届", self.inner.class_of));
                     });
                 });
-                //ui.label(self.university_name.clone());
                 ui.horizontal(|ui| {
                     ui.with_layout(egui::Layout::left_to_right(egui::Align::LEFT), |ui| {
                         ui.label(self.inner.bio.clone().unwrap_or_default());

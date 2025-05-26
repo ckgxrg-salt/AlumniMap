@@ -1,4 +1,5 @@
 mod app;
+mod fetcher;
 mod init;
 mod widgets;
 
