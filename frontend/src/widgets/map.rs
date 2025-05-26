@@ -10,7 +10,7 @@ use entity::university;
 /// The world map on the main interface
 pub struct WorldMap {
     /// All dests will draw a line from the base point
-    base: university::Model,
+    base: FetchedData<university::Model>,
     dests: FetchedData<Vec<university::Model>>,
     internal_area: Rect,
 
@@ -21,7 +21,11 @@ pub struct WorldMap {
 /// Data manipulation
 impl WorldMap {
     /// Creates a new world map
-    pub fn new(base: university::Model) -> Self {
+    pub fn new() -> Self {
+        let base = FetchedData::new(format!("{}api/base", *APP_URL), |response| {
+            let str: String = response.json().unwrap_or_default();
+            serde_json::from_str::<university::Model>(&str).ok()
+        });
         let dests = FetchedData::new(format!("{}api/universities", *APP_URL), |response| {
             let str: String = response.json().unwrap_or_default();
             serde_json::from_str::<Vec<university::Model>>(&str).ok()
@@ -77,29 +81,26 @@ impl WorldMap {
 
     /// Draws the base point and all lines from the base to the dests
     fn draw_base_and_lines(&self, ui: &egui::Ui, area: Rect) {
-        let painter = ui.painter();
-        let base_pos = to_ui_coords(
-            to_norm_coords(self.base.longitude, self.base.latitude),
-            area,
-        );
-        if let Some(data) = &self.dests.data {
-            for each in data {
-                let dest_pos = to_ui_coords(to_norm_coords(each.longitude, each.latitude), area);
-                painter.line_segment(
-                    [base_pos, dest_pos],
-                    egui::Stroke::new(1.0, Color32::from_hex(&each.colour).unwrap_or_default()),
-                );
+        if let Some(data) = &self.base.data {
+            let painter = ui.painter();
+            let base_pos = to_ui_coords(to_norm_coords(data.longitude, data.latitude), area);
+            if let Some(data) = &self.dests.data {
+                for each in data {
+                    let dest_pos =
+                        to_ui_coords(to_norm_coords(each.longitude, each.latitude), area);
+                    painter.line_segment(
+                        [base_pos, dest_pos],
+                        egui::Stroke::new(1.0, Color32::from_hex(&each.colour).unwrap_or_default()),
+                    );
+                }
             }
+            painter.circle(
+                base_pos,
+                7.0,
+                Color32::from_hex(&data.colour).unwrap_or_default(),
+                egui::Stroke::new(1.0, Color32::from_hex(&data.colour).unwrap_or_default()),
+            );
         }
-        painter.circle(
-            base_pos,
-            7.0,
-            Color32::from_hex(&self.base.colour).unwrap_or_default(),
-            egui::Stroke::new(
-                1.0,
-                Color32::from_hex(&self.base.colour).unwrap_or_default(),
-            ),
-        );
     }
 
     /// Recursively draws all destination points

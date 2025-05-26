@@ -22,7 +22,7 @@ impl AlumniMapApp {
         egui_extras::install_image_loaders(&cc.egui_ctx);
         init::init_font(&cc.egui_ctx);
         Self {
-            world_map: init::create_world_map(),
+            world_map: WorldMap::new(),
         }
     }
 }

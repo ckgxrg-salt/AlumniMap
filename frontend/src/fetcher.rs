@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex};
 pub struct FetchedData<T> {
     /// The final data
     pub data: Option<T>,
-    /// Function to convert a [`ehttp::Response`] to the final data
+    /// Function to convert an [`ehttp::Response`] to the final data
     ///
     /// If the conversion failed, it should return a None
     convert: fn(&ehttp::Response) -> Option<T>,

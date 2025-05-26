@@ -32,14 +32,3 @@ pub fn init_font(ctx: &egui::Context) {
 
     ctx.set_fonts(fonts);
 }
-
-pub fn create_world_map() -> WorldMap {
-    WorldMap::new(entity::university::Model {
-        id: 0,
-        title: "Nope".to_string(),
-        icon: "Nope".to_string(),
-        colour: "#ff1144".to_string(),
-        longitude: 23.5,
-        latitude: 0.0,
-    })
-}
