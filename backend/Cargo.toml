@@ -23,3 +23,5 @@ clap = { version = "4.5.38", features = ["derive"] }
 actix-files = "0.6.6"
 include_dir = "0.7.4"
 config = { version = "0.15.11", default-features = false, features = ["toml"] }
+rust-embed-for-web = "11.2.1"
+actix-web-rust-embed-responder = { version = "2.2.3", default-features = false, features = ["base64", "rust-embed-for-web", "support-rust-embed-for-web"] }

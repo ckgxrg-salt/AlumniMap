@@ -69,6 +69,9 @@
                   }
                 ];
                 ensureDatabases = [ "alumnimap" ];
+                authentication = ''
+                  host alumnimap alumnimap 10.233.1.1/32 trust
+                '';
               };
               users.users."alumnimap" = {
                 isSystemUser = true;

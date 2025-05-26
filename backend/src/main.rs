@@ -1,23 +1,25 @@
 use clap::{Parser, Subcommand};
-use config::Config;
 use sea_orm::ActiveValue::Set;
 use sea_orm::{ColumnTrait, Database, EntityTrait, QueryFilter};
-use std::collections::HashMap;
 use std::io::Write;
+use std::path::PathBuf;
 use std::{error::Error, io, str::FromStr};
 
 use backend::server;
 use entity::{profile, university};
 use migration::{Migrator, MigratorTrait};
 
+mod settings;
+
 #[derive(Parser)]
 struct Cli {
     #[arg(
+        short = 'c',
         long = "config",
         default_value = "/var/lib/alumnimap/config.toml",
         help = "Config file"
     )]
-    config: String,
+    config: PathBuf,
 
     #[command(subcommand)]
     command: Commands,
@@ -39,23 +41,11 @@ enum Commands {
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = Cli::parse();
 
-    let config = Config::builder()
-        .add_source(config::File::with_name(&args.config))
-        .add_source(config::Environment::with_prefix("ALUMNIMAP"))
-        .build()
-        .expect("Failed to read config");
+    let settings = settings::Settings::new(&args.config);
 
-    let settings = config
-        .try_deserialize::<HashMap<String, String>>()
-        .expect("Failed to read config");
-
-    let db_uri = settings
-        .get("database_uri")
-        .expect("Config file didn't specify database_uri");
-    let assets_root = settings
-        .get("assets_root")
-        .expect("Config file didn't specify database_uri");
-    let base_point = build_base_point(&settings);
+    let db_uri = &settings.general.database_uri;
+    let assets_root = &settings.general.assets_root;
+    let base_point = settings.base.into();
 
     match args.command {
         Commands::Server => run_server(db_uri, assets_root, base_point).await,
@@ -65,34 +55,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }?;
 
     Ok(())
-}
-fn build_base_point(config: &HashMap<String, String>) -> university::Model {
-    let title = config
-        .get("base.title")
-        .expect("Config file didn't specify base.title")
-        .to_string();
-    let longitude = config
-        .get("base.longitude")
-        .expect("Config file didn't specify base.longitude")
-        .parse()
-        .expect("Invalid base.longitude");
-    let latitude = config
-        .get("base.latitude")
-        .expect("Config file didn't specify base.latitude")
-        .parse()
-        .expect("Invalid base.latitude");
-    let colour = config
-        .get("base.colour")
-        .expect("Config file didn't specify base.colour")
-        .to_string();
-    university::Model {
-        id: -1,
-        icon: String::new(),
-        title,
-        colour,
-        longitude,
-        latitude,
-    }
 }
 
 /// Actually starts the server

@@ -1,10 +1,26 @@
 use actix_files::NamedFile;
-use actix_web::{get, web, HttpRequest, HttpResponse};
+use actix_web::{get, web, HttpRequest, HttpResponse, Responder};
+use actix_web_rust_embed_responder::IntoResponse;
+use rust_embed_for_web::RustEmbed;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use std::path::PathBuf;
 
 use crate::server::AppState;
 use entity::{profile, university};
+
+#[derive(RustEmbed)]
+#[folder = "../frontend/dist"]
+struct Dist;
+
+#[get("/{path:.*}")]
+pub async fn index(path: web::Path<String>) -> impl Responder {
+    let path = if path.is_empty() {
+        "index.html"
+    } else {
+        path.as_str()
+    };
+    Dist::get(path).into_response()
+}
 
 #[get("/static/{filename:.*}")]
 pub async fn png(req: HttpRequest, state: web::Data<AppState>) -> actix_web::Result<NamedFile> {
