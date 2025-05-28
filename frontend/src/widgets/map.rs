@@ -132,22 +132,53 @@ impl WorldMap {
             for each in data {
                 let draw_pos = to_ui_coords(to_norm_coords(each.longitude, each.latitude), area);
                 if self.highlights.contains(each) {
+                    let left_top = Pos2::new(
+                        draw_pos.x - (60.0 / area.height() * self.internal_area.height()),
+                        draw_pos.y - (60.0 / area.height() * self.internal_area.height()),
+                    );
+                    let right_bottom = Pos2::new(
+                        draw_pos.x + (60.0 / area.height() * self.internal_area.height()),
+                        draw_pos.y + (60.0 / area.height() * self.internal_area.height()),
+                    );
+                    let rect = Rect {
+                        min: left_top,
+                        max: right_bottom,
+                    };
+                    painter.circle(
+                        draw_pos,
+                        80.0 / area.height() * self.internal_area.height(),
+                        Color32::WHITE,
+                        egui::Stroke::new(
+                            10.0 / area.height() * self.internal_area.height(),
+                            Color32::LIGHT_RED,
+                        ),
+                    );
+                    egui::Image::new(format!("{}static/icons/{}", *APP_URL, each.icon))
+                        .paint_at(ui, rect);
+                } else {
+                    let left_top = Pos2::new(
+                        draw_pos.x - (40.0 / area.height() * self.internal_area.height()),
+                        draw_pos.y - (40.0 / area.height() * self.internal_area.height()),
+                    );
+                    let right_bottom = Pos2::new(
+                        draw_pos.x + (40.0 / area.height() * self.internal_area.height()),
+                        draw_pos.y + (40.0 / area.height() * self.internal_area.height()),
+                    );
+                    let rect = Rect {
+                        min: left_top,
+                        max: right_bottom,
+                    };
                     painter.circle(
                         draw_pos,
                         40.0 / area.height() * self.internal_area.height(),
-                        Color32::LIGHT_RED,
+                        Color32::WHITE,
                         egui::Stroke::new(
                             2.0 / area.height() * self.internal_area.height(),
-                            Color32::BLACK,
+                            Color32::LIGHT_GRAY,
                         ),
                     );
-                } else {
-                    painter.circle(
-                        draw_pos,
-                        15.0 / area.height() * self.internal_area.height(),
-                        Color32::from_hex(&each.colour).unwrap_or_default(),
-                        egui::Stroke::NONE,
-                    );
+                    egui::Image::new(format!("{}static/icons/{}", *APP_URL, each.icon))
+                        .paint_at(ui, rect);
                 }
             }
         }
@@ -162,7 +193,7 @@ impl WorldMap {
                     (click_pos.y - area.top()) / area.height(),
                 );
                 let distance = norm_coord.distance(to_norm_coords(each.longitude, each.latitude));
-                if distance < 15.0 / area.height() / area.height() * self.internal_area.height()
+                if distance < 40.0 / area.height() / area.height() * self.internal_area.height()
                     && !self.popups.iter().any(|list| list.inner.uni_id == each.id)
                 {
                     let initial_pos = ui
@@ -183,13 +214,13 @@ impl WorldMap {
                 (hover_pos.y - area.top()) / area.height(),
             );
             let distance = norm_coord.distance(to_norm_coords(data.longitude, data.latitude));
-            if distance < 25.0 / area.height() / area.height() * self.internal_area.height() {
+            if distance < 20.0 / area.height() / area.height() * self.internal_area.height() {
                 egui::show_tooltip_at_pointer(
                     ui.ctx(),
                     ui.layer_id(),
                     egui::Id::new("dest_points_tooltip"),
                     |ui| {
-                        ui.label(&data.title);
+                        ui.add(egui::Label::new(&data.title).extend());
                     },
                 );
             }
@@ -201,7 +232,7 @@ impl WorldMap {
                     (hover_pos.y - area.top()) / area.height(),
                 );
                 let distance = norm_coord.distance(to_norm_coords(each.longitude, each.latitude));
-                if distance < 15.0 / area.height() / area.height() * self.internal_area.height() {
+                if distance < 40.0 / area.height() / area.height() * self.internal_area.height() {
                     egui::show_tooltip_at_pointer(
                         ui.ctx(),
                         ui.layer_id(),
