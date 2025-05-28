@@ -3,10 +3,7 @@
 //!
 //! This is a one-time fetch, if fails it won't try again, once finished it'll be useless.
 
-use std::{
-    sync::{Arc, Mutex},
-    time::Duration,
-};
+use std::sync::{Arc, Mutex};
 
 /// Wrapper over the fetched data
 pub struct FetchedData<T> {
@@ -55,7 +52,7 @@ impl<T> FetchedData<T> {
                 if let Some(Ok(real_response)) = &*data {
                     self.data = (self.convert)(real_response);
                 }
-                ctx.request_repaint_after(Duration::from_millis(500));
+                ctx.request_repaint();
                 self.done = true;
             }
         }

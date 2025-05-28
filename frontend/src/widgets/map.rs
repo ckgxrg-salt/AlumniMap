@@ -62,9 +62,6 @@ impl WorldMap {
 impl WorldMap {
     /// Calls egui to draw everything to the screen
     pub fn render(&mut self, ui: &mut egui::Ui) {
-        self.base.poll(ui.ctx());
-        self.dests.poll(ui.ctx());
-
         // Map itself
         let mut real_internal_area = self.internal_area;
         let scene = egui::Scene::new().zoom_range(0.5..=30.0);
@@ -96,6 +93,9 @@ impl WorldMap {
         for each in closing {
             self.popups.remove(each);
         }
+
+        self.base.poll(ui.ctx());
+        self.dests.poll(ui.ctx());
     }
 
     /// Draws the base point and all lines from the base to the dests

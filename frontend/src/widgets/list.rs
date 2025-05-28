@@ -45,8 +45,6 @@ impl ListState {
 impl ListState {
     /// Calls egui to draw everything to the screen
     pub fn render(&mut self, ctx: &egui::Context) {
-        self.inner.profiles.poll(ctx);
-
         let mut window = egui::Window::new(&self.inner.title)
             .collapsible(true)
             .open(&mut self.open);
@@ -65,5 +63,7 @@ impl ListState {
                 }
             });
         });
+
+        self.inner.profiles.poll(ctx);
     }
 }
