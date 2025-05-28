@@ -8,10 +8,19 @@ use crate::widgets::list::ListState;
 use entity::university;
 
 /// Defines the world map image to use
-/// The offset value will be added to the provided value in order to translate the map if it's not
+///
+/// The map offset value will be added to the provided value in order to translate the map if it's not
 /// centered at the 0 degree longitude.
-const LONGITUDE_OFFSET: f32 = -170.0;
-const LATITUDE_OFFSET: f32 = -13.0;
+///
+/// The scale value is used to scale the transformed coordinates by some value to fit on the map
+///
+/// The final offset will be added after the transformation
+const MAP_LONGITUDE_OFFSET: f32 = -150.0;
+const MAP_LATITUDE_OFFSET: f32 = 0.0;
+const LONGITUDE_SCALE: f32 = 0.985;
+const LATITUDE_SCALE: f32 = 1.0;
+const FINAL_LONGITUDE_OFFSET: f32 = 0.0;
+const FINAL_LATITUDE_OFFSET: f32 = 0.0;
 const IMAGE: egui::ImageSource<'_> = egui::include_image!("../../assets/world.png");
 
 /// The world map on the main interface
@@ -55,7 +64,7 @@ impl WorldMap {
 
         // Map itself
         let mut real_internal_area = self.internal_area;
-        let scene = egui::Scene::new().zoom_range(0.1..=10.0);
+        let scene = egui::Scene::new().zoom_range(0.5..=30.0);
         scene.show(ui, &mut real_internal_area, |ui| {
             let image = egui::Image::new(IMAGE)
                 .sense(egui::Sense::CLICK | egui::Sense::HOVER)
@@ -103,7 +112,7 @@ impl WorldMap {
             }
             painter.circle(
                 base_pos,
-                7.0,
+                20.0,
                 Color32::from_hex(&data.colour).unwrap_or_default(),
                 egui::Stroke::new(1.0, Color32::from_hex(&data.colour).unwrap_or_default()),
             );
@@ -118,7 +127,7 @@ impl WorldMap {
                 let draw_pos = to_ui_coords(to_norm_coords(each.longitude, each.latitude), area);
                 painter.circle(
                     draw_pos,
-                    5.0 / area.height() * self.internal_area.height(),
+                    15.0 / area.height() * self.internal_area.height(),
                     Color32::from_hex(&each.colour).unwrap_or_default(),
                     egui::Stroke::new(1.0, Color32::from_hex(&each.colour).unwrap_or_default()),
                 );
@@ -135,7 +144,7 @@ impl WorldMap {
                     (click_pos.y - area.top()) / area.height(),
                 );
                 let distance = norm_coord.distance(to_norm_coords(each.longitude, each.latitude));
-                if distance < 5.0 / area.height() / area.height() * self.internal_area.height()
+                if distance < 25.0 / area.height() / area.height() * self.internal_area.height()
                     && !self.popups.iter().any(|list| list.inner.uni_id == each.id)
                 {
                     let initial_pos = ui
@@ -150,6 +159,23 @@ impl WorldMap {
 
     /// Handles the logic when the cursor hovers over a destination point
     fn check_hover(&self, ui: &egui::Ui, hover_pos: Pos2, area: Rect) {
+        if let Some(data) = &self.base.data {
+            let norm_coord = Pos2::new(
+                (hover_pos.x - area.left()) / area.width(),
+                (hover_pos.y - area.top()) / area.height(),
+            );
+            let distance = norm_coord.distance(to_norm_coords(data.longitude, data.latitude));
+            if distance < 25.0 / area.height() / area.height() * self.internal_area.height() {
+                egui::show_tooltip_at_pointer(
+                    ui.ctx(),
+                    ui.layer_id(),
+                    egui::Id::new("dest_points_tooltip"),
+                    |ui| {
+                        ui.label(&data.title);
+                    },
+                );
+            }
+        }
         if let Some(data) = &self.dests.data {
             for each in data {
                 let norm_coord = Pos2::new(
@@ -157,7 +183,7 @@ impl WorldMap {
                     (hover_pos.y - area.top()) / area.height(),
                 );
                 let distance = norm_coord.distance(to_norm_coords(each.longitude, each.latitude));
-                if distance < 5.0 / area.height() / area.height() * self.internal_area.height() {
+                if distance < 25.0 / area.height() / area.height() * self.internal_area.height() {
                     egui::show_tooltip_at_pointer(
                         ui.ctx(),
                         ui.layer_id(),
@@ -175,11 +201,11 @@ impl WorldMap {
 /// Translates longitude by the offset value
 /// Will wrap from 180 to -180 if exceeds the boundary
 fn offset_longitude(longitude: f32) -> f32 {
-    let result = longitude + LONGITUDE_OFFSET;
+    let result = longitude + MAP_LONGITUDE_OFFSET;
     if result > 180.0 {
-        result - 180.0
+        result - 360.0
     } else if result < -180.0 {
-        result + 180.0
+        result + 360.0
     } else {
         result
     }
@@ -187,11 +213,11 @@ fn offset_longitude(longitude: f32) -> f32 {
 /// Translates latitude by the offset value
 /// Will wrap from 90 to -90 if exceeds the boundary
 fn offset_latitude(latitude: f32) -> f32 {
-    let result = latitude + LATITUDE_OFFSET;
+    let result = latitude + MAP_LATITUDE_OFFSET;
     if result > 90.0 {
-        result - 90.0
+        result - 180.0
     } else if result < -90.0 {
-        result + 90.0
+        result + 180.0
     } else {
         result
     }
@@ -203,8 +229,8 @@ fn offset_latitude(latitude: f32) -> f32 {
 /// centered at the 0 degree longitude.
 fn to_norm_coords(longitude: f32, latitude: f32) -> Pos2 {
     Pos2::new(
-        offset_longitude(longitude) / 360.0 + 0.5,
-        0.5 - offset_latitude(latitude) / 180.0,
+        (offset_longitude(longitude) * LONGITUDE_SCALE + FINAL_LONGITUDE_OFFSET) / 360.0 + 0.5,
+        0.5 - (offset_latitude(latitude) * LATITUDE_SCALE + FINAL_LATITUDE_OFFSET) / 180.0,
     )
 }
 
