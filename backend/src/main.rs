@@ -43,15 +43,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let settings = settings::Settings::new(&args.config);
 
-    let db_uri = &settings.general.database_uri;
-    let assets_root = &settings.general.assets_root;
+    let db_uri = settings.general.database_uri;
+    let assets_root = settings.general.assets_root;
     let base_point = settings.base.into();
 
+    let addr = settings.general.addr;
+    let port = settings.general.port;
+
     match args.command {
-        Commands::Server => run_server(db_uri, assets_root, base_point).await,
-        Commands::Migrate => run_migration(db_uri).await,
-        Commands::List { kind } => list(db_uri, &kind).await,
-        Commands::Add { kind } => interactive_add(db_uri, &kind).await,
+        Commands::Server => run_server(&db_uri, &assets_root, base_point, addr, port).await,
+        Commands::Migrate => run_migration(&db_uri).await,
+        Commands::List { kind } => list(&db_uri, &kind).await,
+        Commands::Add { kind } => interactive_add(&db_uri, &kind).await,
     }?;
 
     Ok(())
@@ -62,6 +65,8 @@ async fn run_server(
     uri: &str,
     assets_root: &str,
     base_point: university::Model,
+    addr: String,
+    port: u16,
 ) -> Result<(), Box<dyn Error>> {
     let db = Database::connect(uri).await?;
     let pending = Migrator::get_pending_migrations(&db).await?;
@@ -71,7 +76,7 @@ async fn run_server(
         println!("Success");
     }
     println!("Running server");
-    server::run(db, assets_root, base_point).await?;
+    server::run(db, assets_root, base_point, addr, port).await?;
     Ok(())
 }
 

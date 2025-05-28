@@ -1,6 +1,8 @@
 [general]
 assets_root = "/var/lib/alumnimap/assets"
 database_uri = "postgres://alumnimap@localhost/alumnimap"
+addr = "127.0.0.1"
+port = 8080
 
 # The base point
 [base]

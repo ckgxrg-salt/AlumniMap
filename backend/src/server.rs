@@ -38,6 +38,8 @@ pub async fn run(
     db: DatabaseConnection,
     assets_root: &str,
     base: university::Model,
+    addr: String,
+    port: u16,
 ) -> Result<(), AppError> {
     let state = AppState {
         db,
@@ -50,9 +52,7 @@ pub async fn run(
             .wrap(middleware::Logger::default())
             .configure(routes::setup)
     });
-    server = server
-        .bind(("127.0.0.1", 8080))
-        .map_err(|_| AppError::ListenErr)?;
+    server = server.bind((addr, port)).map_err(|_| AppError::ListenErr)?;
     server
         .run()
         .await

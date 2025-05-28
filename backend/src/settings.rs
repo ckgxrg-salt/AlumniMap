@@ -8,6 +8,8 @@ use entity::university;
 pub struct General {
     pub database_uri: String,
     pub assets_root: String,
+    pub addr: String,
+    pub port: u16,
 }
 
 #[derive(Debug, Deserialize)]
