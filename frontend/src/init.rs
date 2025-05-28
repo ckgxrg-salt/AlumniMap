@@ -1,6 +1,6 @@
 //! Initialise the app
 
-use egui::{FontData, FontDefinitions, FontFamily};
+use egui::{FontData, FontDefinitions};
 
 pub fn init_font(ctx: &egui::Context) {
     let mut fonts = FontDefinitions::default();
@@ -27,32 +27,6 @@ pub fn init_font(ctx: &egui::Context) {
         .entry(egui::FontFamily::Proportional)
         .or_default()
         .insert(0, "notosans-nf".to_owned());
-
-    let mut style = (*ctx.style()).clone();
-    style.text_styles = [
-        (
-            egui::TextStyle::Heading,
-            egui::FontId::new(22.0, FontFamily::Proportional),
-        ),
-        (
-            egui::TextStyle::Body,
-            egui::FontId::new(16.0, FontFamily::Proportional),
-        ),
-        (
-            egui::TextStyle::Monospace,
-            egui::FontId::new(16.0, FontFamily::Monospace),
-        ),
-        (
-            egui::TextStyle::Button,
-            egui::FontId::new(12.0, FontFamily::Proportional),
-        ),
-        (
-            egui::TextStyle::Small,
-            egui::FontId::new(10.0, FontFamily::Proportional),
-        ),
-    ]
-    .into();
-    ctx.set_style(style);
 
     ctx.set_fonts(fonts);
 }
