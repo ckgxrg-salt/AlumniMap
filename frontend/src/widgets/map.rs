@@ -157,7 +157,7 @@ impl WorldMap {
                         ui.layer_id(),
                         egui::Id::new("dest_points_tooltip"),
                         |ui| {
-                            ui.label(each.title.clone());
+                            ui.label(&each.title);
                         },
                     );
                 }

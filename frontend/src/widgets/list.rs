@@ -38,7 +38,7 @@ impl List {
     pub fn render(&mut self, ctx: &egui::Context, should_display: &mut bool) {
         self.profiles.poll(ctx);
 
-        let window = egui::Window::new(self.title.clone())
+        let window = egui::Window::new(&self.title)
             .current_pos(self.starting_pos)
             .collapsible(false)
             .open(should_display);
