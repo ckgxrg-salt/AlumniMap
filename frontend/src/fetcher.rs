@@ -1,7 +1,7 @@
 //! General functions to "asynchrously" fetch data from some remote api
 //! since we have no native multitask support in WASM
 //!
-//! This is a one-time fetch, if fails it will try again, but once finished it'll be useless.
+//! This is a one-time fetch, if fails it won't try again, once finished it'll be useless.
 
 use std::sync::{Arc, Mutex};
 

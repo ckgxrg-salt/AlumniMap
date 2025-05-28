@@ -30,8 +30,10 @@ pub struct WorldMap {
     dests: FetchedData<Vec<university::Model>>,
     internal_area: Rect,
 
-    /// All currently visible [`List`]s
+    /// All currently visible [`ListState`]s
     popups: Vec<ListState>,
+    /// Points that should be highlighted
+    pub highlights: Vec<university::Model>,
 }
 
 /// Data manipulation
@@ -51,6 +53,7 @@ impl WorldMap {
             dests,
             internal_area: Rect::ZERO,
             popups: Vec::new(),
+            highlights: Vec::new(),
         }
     }
 }
@@ -106,7 +109,10 @@ impl WorldMap {
                         to_ui_coords(to_norm_coords(each.longitude, each.latitude), area);
                     painter.line_segment(
                         [base_pos, dest_pos],
-                        egui::Stroke::new(1.0, Color32::from_hex(&each.colour).unwrap_or_default()),
+                        egui::Stroke::new(
+                            5.0 / area.height() * self.internal_area.height(),
+                            Color32::from_hex(&each.colour).unwrap_or_default(),
+                        ),
                     );
                 }
             }
@@ -114,7 +120,7 @@ impl WorldMap {
                 base_pos,
                 20.0,
                 Color32::from_hex(&data.colour).unwrap_or_default(),
-                egui::Stroke::new(1.0, Color32::from_hex(&data.colour).unwrap_or_default()),
+                egui::Stroke::NONE,
             );
         }
     }
@@ -125,12 +131,24 @@ impl WorldMap {
         if let Some(data) = &self.dests.data {
             for each in data {
                 let draw_pos = to_ui_coords(to_norm_coords(each.longitude, each.latitude), area);
-                painter.circle(
-                    draw_pos,
-                    15.0 / area.height() * self.internal_area.height(),
-                    Color32::from_hex(&each.colour).unwrap_or_default(),
-                    egui::Stroke::new(1.0, Color32::from_hex(&each.colour).unwrap_or_default()),
-                );
+                if self.highlights.contains(each) {
+                    painter.circle(
+                        draw_pos,
+                        40.0 / area.height() * self.internal_area.height(),
+                        Color32::LIGHT_RED,
+                        egui::Stroke::new(
+                            2.0 / area.height() * self.internal_area.height(),
+                            Color32::BLACK,
+                        ),
+                    );
+                } else {
+                    painter.circle(
+                        draw_pos,
+                        15.0 / area.height() * self.internal_area.height(),
+                        Color32::from_hex(&each.colour).unwrap_or_default(),
+                        egui::Stroke::NONE,
+                    );
+                }
             }
         }
     }
@@ -144,7 +162,7 @@ impl WorldMap {
                     (click_pos.y - area.top()) / area.height(),
                 );
                 let distance = norm_coord.distance(to_norm_coords(each.longitude, each.latitude));
-                if distance < 25.0 / area.height() / area.height() * self.internal_area.height()
+                if distance < 15.0 / area.height() / area.height() * self.internal_area.height()
                     && !self.popups.iter().any(|list| list.inner.uni_id == each.id)
                 {
                     let initial_pos = ui
@@ -158,7 +176,7 @@ impl WorldMap {
     }
 
     /// Handles the logic when the cursor hovers over a destination point
-    fn check_hover(&self, ui: &egui::Ui, hover_pos: Pos2, area: Rect) {
+    fn check_hover(&mut self, ui: &egui::Ui, hover_pos: Pos2, area: Rect) {
         if let Some(data) = &self.base.data {
             let norm_coord = Pos2::new(
                 (hover_pos.x - area.left()) / area.width(),
@@ -183,7 +201,7 @@ impl WorldMap {
                     (hover_pos.y - area.top()) / area.height(),
                 );
                 let distance = norm_coord.distance(to_norm_coords(each.longitude, each.latitude));
-                if distance < 25.0 / area.height() / area.height() * self.internal_area.height() {
+                if distance < 15.0 / area.height() / area.height() * self.internal_area.height() {
                     egui::show_tooltip_at_pointer(
                         ui.ctx(),
                         ui.layer_id(),
@@ -192,8 +210,20 @@ impl WorldMap {
                             ui.label(&each.title);
                         },
                     );
+                    Self::remove_from_list(&mut self.highlights, each);
                 }
             }
+        }
+    }
+    fn remove_from_list(list: &mut Vec<university::Model>, item: &university::Model) {
+        let mut removing = Vec::new();
+        for (index, each) in list.iter().enumerate() {
+            if each == item {
+                removing.push(index);
+            }
+        }
+        for each in removing {
+            list.remove(each);
         }
     }
 }

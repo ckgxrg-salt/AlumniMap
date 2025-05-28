@@ -2,6 +2,7 @@ use std::sync::LazyLock;
 
 use crate::init;
 use crate::widgets::map::WorldMap;
+use crate::widgets::search::Search;
 
 pub static APP_URL: LazyLock<String> = LazyLock::new(get_app_url);
 fn get_app_url() -> String {
@@ -14,6 +15,7 @@ fn get_app_url() -> String {
 
 pub struct AlumniMapApp {
     world_map: WorldMap,
+    search: Search,
 }
 
 impl AlumniMapApp {
@@ -24,6 +26,7 @@ impl AlumniMapApp {
         init::set_theme(&cc.egui_ctx);
         Self {
             world_map: WorldMap::new(),
+            search: Search::new(),
         }
     }
 }
@@ -31,8 +34,8 @@ impl AlumniMapApp {
 impl eframe::App for AlumniMapApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
+            self.search.render(ui, &mut self.world_map);
             ui.separator();
-
             self.world_map.render(ui);
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::RIGHT), |ui| {
