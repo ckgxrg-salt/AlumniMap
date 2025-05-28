@@ -44,7 +44,7 @@ impl<T> FetchedData<T> {
     }
 
     /// This should be called each cycle
-    pub fn poll(&mut self) {
+    pub fn poll(&mut self, ctx: &egui::Context) {
         if !self.done {
             let response = self.got_response();
             if response {
@@ -52,6 +52,7 @@ impl<T> FetchedData<T> {
                 if let Some(Ok(real_response)) = &*data {
                     self.data = (self.convert)(real_response);
                 }
+                ctx.request_repaint();
                 self.done = true;
             }
         }

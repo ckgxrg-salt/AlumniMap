@@ -43,8 +43,8 @@ impl WorldMap {
 impl WorldMap {
     /// Calls egui to draw everything to the screen
     pub fn render(&mut self, ui: &mut egui::Ui) {
-        self.base.poll();
-        self.dests.poll();
+        self.base.poll(ui.ctx());
+        self.dests.poll(ui.ctx());
 
         // Map itself
         let mut real_internal_area = self.internal_area;

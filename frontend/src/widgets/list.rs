@@ -36,7 +36,7 @@ impl List {
 impl List {
     /// Calls egui to draw everything to the screen
     pub fn render(&mut self, ctx: &egui::Context, should_display: &mut bool) {
-        self.profiles.poll();
+        self.profiles.poll(ctx);
 
         let window = egui::Window::new(self.title.clone())
             .current_pos(self.starting_pos)
