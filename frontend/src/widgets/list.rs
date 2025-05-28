@@ -19,13 +19,10 @@ pub struct List {
 impl List {
     /// Creates a new list
     pub fn new(title: String, uni_id: i32, starting_pos: Pos2) -> Self {
-        let profiles = FetchedData::new(
-            format!("{}api/universities{uni_id}", *APP_URL),
-            |response| {
-                let str: String = response.json().unwrap_or_default();
-                serde_json::from_str::<Vec<profile::Model>>(&str).ok()
-            },
-        );
+        let profiles = FetchedData::new(format!("{}api/profiles/{uni_id}", *APP_URL), |response| {
+            let str: String = response.json().unwrap_or_default();
+            serde_json::from_str::<Vec<profile::Model>>(&str).ok()
+        });
         Self {
             profiles,
             title,
