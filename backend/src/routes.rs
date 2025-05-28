@@ -9,7 +9,8 @@ pub fn setup(cfg: &mut web::ServiceConfig) {
             .service(handlers::base)
             .service(handlers::get_uni_name)
             .service(handlers::universities)
-            .service(handlers::profiles),
+            .service(handlers::profiles)
+            .service(handlers::search_university),
     )
     .service(handlers::png)
     .service(handlers::index);

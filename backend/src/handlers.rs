@@ -84,3 +84,18 @@ pub async fn profiles(state: web::Data<AppState>, path: web::Path<i32>) -> HttpR
         Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
     }
 }
+
+#[get("/search/universities/{search_text}")]
+pub async fn search_university(
+    state: web::Data<AppState>,
+    path: web::Path<String>,
+) -> HttpResponse {
+    let list = university::Entity::find()
+        .filter(university::Column::Title.contains(path.into_inner()))
+        .all(&state.db)
+        .await;
+    match list {
+        Ok(result) => HttpResponse::Ok().json(serde_json::to_string(&result).unwrap_or_default()),
+        Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
+    }
+}
