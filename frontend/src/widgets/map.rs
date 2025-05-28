@@ -4,7 +4,7 @@ use egui::{Color32, Pos2, Rect};
 
 use crate::app::APP_URL;
 use crate::fetcher::FetchedData;
-use crate::widgets::list::List;
+use crate::widgets::list::ListState;
 use entity::university;
 
 /// Defines the world map image to use
@@ -22,7 +22,7 @@ pub struct WorldMap {
     internal_area: Rect,
 
     /// All currently visible [`List`]s
-    popups: Vec<(List, bool)>,
+    popups: Vec<ListState>,
 }
 
 /// Data manipulation
@@ -76,9 +76,8 @@ impl WorldMap {
         // Popups
         let mut closing = Vec::new();
         for (index, each) in self.popups.iter_mut().enumerate() {
-            let (list, should_display) = each;
-            list.render(ui.ctx(), should_display);
-            if !*should_display {
+            each.render(ui.ctx());
+            if !each.open {
                 closing.push(index);
             }
         }
@@ -137,13 +136,13 @@ impl WorldMap {
                 );
                 let distance = norm_coord.distance(to_norm_coords(each.longitude, each.latitude));
                 if distance < 5.0 / area.height() / area.height() * self.internal_area.height()
-                    && !self.popups.iter().any(|list| list.0.uni_id == each.id)
+                    && !self.popups.iter().any(|list| list.inner.uni_id == each.id)
                 {
-                    let starting_pos = ui
+                    let initial_pos = ui
                         .input(|input| input.pointer.interact_pos())
                         .unwrap_or_default();
-                    let popup = List::new(each.title.clone(), each.id, starting_pos);
-                    self.popups.push((popup, true));
+                    let popup = ListState::new(each.title.clone(), each.id, initial_pos);
+                    self.popups.push(popup);
                 }
             }
         }

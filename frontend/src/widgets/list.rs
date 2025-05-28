@@ -12,39 +12,53 @@ pub struct List {
     profiles: FetchedData<Vec<profile::Model>>,
     pub title: String,
     pub uni_id: i32,
-    starting_pos: Pos2,
+}
+/// Keep track of the [`List`]'s state
+pub struct ListState {
+    pub open: bool,
+    initial_pos: Option<Pos2>,
+    pub inner: List,
 }
 
 /// Data manipulation
-impl List {
+impl ListState {
     /// Creates a new list
-    pub fn new(title: String, uni_id: i32, starting_pos: Pos2) -> Self {
+    pub fn new(title: String, uni_id: i32, initial_pos: Pos2) -> Self {
         let profiles = FetchedData::new(format!("{}api/profiles/{uni_id}", *APP_URL), |response| {
             let str: String = response.json().unwrap_or_default();
             serde_json::from_str::<Vec<profile::Model>>(&str).ok()
         });
-        Self {
+        let list = List {
             profiles,
             title,
             uni_id,
-            starting_pos,
+        };
+        Self {
+            open: true,
+            initial_pos: Some(initial_pos),
+            inner: list,
         }
     }
 }
 
 /// Graphics
-impl List {
+impl ListState {
     /// Calls egui to draw everything to the screen
-    pub fn render(&mut self, ctx: &egui::Context, should_display: &mut bool) {
-        self.profiles.poll(ctx);
+    pub fn render(&mut self, ctx: &egui::Context) {
+        self.inner.profiles.poll(ctx);
 
-        let window = egui::Window::new(&self.title)
-            .current_pos(self.starting_pos)
-            .collapsible(false)
-            .open(should_display);
+        let mut window = egui::Window::new(&self.inner.title)
+            .collapsible(true)
+            .open(&mut self.open);
+
+        // Move to new position when reopened
+        if let Some(pos) = self.initial_pos.take() {
+            window = window.current_pos(pos);
+        }
+
         window.show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
-                if let Some(data) = &self.profiles.data {
+                if let Some(data) = &self.inner.profiles.data {
                     for each in data {
                         card::render(each, ui);
                     }
