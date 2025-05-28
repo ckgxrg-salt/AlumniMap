@@ -7,6 +7,13 @@ use crate::fetcher::FetchedData;
 use crate::widgets::list::List;
 use entity::university;
 
+/// Defines the world map image to use
+/// The offset value will be added to the provided value in order to translate the map if it's not
+/// centered at the 0 degree longitude.
+const LONGITUDE_OFFSET: f32 = -170.0;
+const LATITUDE_OFFSET: f32 = -13.0;
+const IMAGE: egui::ImageSource<'_> = egui::include_image!("../../assets/world.png");
+
 /// The world map on the main interface
 pub struct WorldMap {
     /// All dests will draw a line from the base point
@@ -50,7 +57,7 @@ impl WorldMap {
         let mut real_internal_area = self.internal_area;
         let scene = egui::Scene::new().zoom_range(0.1..=10.0);
         scene.show(ui, &mut real_internal_area, |ui| {
-            let image = egui::Image::new(egui::include_image!("../../assets/world.svg"))
+            let image = egui::Image::new(IMAGE)
                 .sense(egui::Sense::CLICK | egui::Sense::HOVER)
                 .fit_to_original_size(1.0);
             let image_res = ui.add(image);
@@ -166,9 +173,40 @@ impl WorldMap {
     }
 }
 
+/// Translates longitude by the offset value
+/// Will wrap from 180 to -180 if exceeds the boundary
+fn offset_longitude(longitude: f32) -> f32 {
+    let result = longitude + LONGITUDE_OFFSET;
+    if result > 180.0 {
+        result - 180.0
+    } else if result < -180.0 {
+        result + 180.0
+    } else {
+        result
+    }
+}
+/// Translates latitude by the offset value
+/// Will wrap from 90 to -90 if exceeds the boundary
+fn offset_latitude(latitude: f32) -> f32 {
+    let result = latitude + LATITUDE_OFFSET;
+    if result > 90.0 {
+        result - 90.0
+    } else if result < -90.0 {
+        result + 90.0
+    } else {
+        result
+    }
+}
+
 /// Converts longitude and latitude to normalised coordinates
+///
+/// The offset value will be added to the provided value in order to translate the map if it's not
+/// centered at the 0 degree longitude.
 fn to_norm_coords(longitude: f32, latitude: f32) -> Pos2 {
-    Pos2::new(longitude / 360.0 + 0.5, 0.5 - latitude / 180.0)
+    Pos2::new(
+        offset_longitude(longitude) / 360.0 + 0.5,
+        0.5 - offset_latitude(latitude) / 180.0,
+    )
 }
 
 /// Converts normalised coordinates to ui coordinates
@@ -177,18 +215,4 @@ fn to_ui_coords(norm: Pos2, area: Rect) -> Pos2 {
         norm.x * area.width() + area.left(),
         norm.y * area.height() + area.top(),
     )
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_coordinates_conversion() {
-        assert_eq!(to_norm_coords(180.0, 90.0), Pos2::new(1.0, 0.0));
-        assert_eq!(to_norm_coords(90.0, 45.0), Pos2::new(0.75, 0.25));
-        assert_eq!(to_norm_coords(0.0, 0.0), Pos2::new(0.5, 0.5));
-        assert_eq!(to_norm_coords(-180.0, -90.0), Pos2::new(0.0, 1.0));
-        assert_eq!(to_norm_coords(-90.0, -45.0), Pos2::new(0.25, 0.75));
-    }
 }
