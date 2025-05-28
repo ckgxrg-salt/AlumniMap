@@ -33,4 +33,5 @@ pub fn init_font(ctx: &egui::Context) {
 
 pub fn set_theme(ctx: &egui::Context) {
     catppuccin_egui::set_theme(ctx, catppuccin_egui::FRAPPE);
+    ctx.set_theme(egui::Theme::Dark);
 }
