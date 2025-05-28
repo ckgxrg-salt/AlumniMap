@@ -1,6 +1,7 @@
 //! Each individual's profile card
 
 use crate::app::APP_URL;
+use egui::Vec2;
 use entity::profile;
 
 /// Moves a value out from the struct
@@ -15,7 +16,7 @@ fn extract_string(from: Option<&String>) -> &str {
 pub fn render(model: &profile::Model, ui: &mut egui::Ui) {
     ui.horizontal(|ui| {
         let image = egui::Image::new(format!("{}static/avatars/{}", *APP_URL, model.avatar))
-            .shrink_to_fit();
+            .fit_to_exact_size(Vec2::new(75.0, 75.0));
         ui.add(image);
         ui.separator();
         ui.vertical(|ui| {
